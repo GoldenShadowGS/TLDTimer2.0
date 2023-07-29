@@ -1,0 +1,19 @@
+#include "Resource.h"
+
+SOUND_RATCHET1            WAVDATA                    "Resources/ratchet1.wav"
+SOUND_RATCHET2            WAVDATA                    "Resources/ratchet2.wav"
+SOUND_RATCHET3            WAVDATA                    "Resources/ratchet3.wav"
+
+SOUND_ALARM               WAVDATA                    "Resources/alarm.wav"
+SOUND_GOCLICK             WAVDATA                    "Resources/goclick.wav"
+SOUND_STOPCLICK           WAVDATA                    "Resources/stopclick.wav"
+SOUND_SPLIT               WAVDATA                    "Resources/split.wav"
+SOUND_RESET               WAVDATA                    "Resources/reset.wav"
+SOUND_TIMER               WAVDATA                    "Resources/timerclick.wav"
+
+
+
+BITMAP_MINUTEHAND         BITMAPDATA                 "resources/MinuteHand.bmp"
+BITMAP_MINUTEHANDSHADOW   BITMAPDATA                 "resources/MinuteHandShadow.bmp"
+BITMAP_HOURHAND           BITMAPDATA                 "resources/HourHand.bmp"
+BITMAP_HOURHANDSHADOW     BITMAPDATA                 "resources/HourHandShadow.bmp"
