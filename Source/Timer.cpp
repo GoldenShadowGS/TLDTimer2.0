@@ -9,7 +9,7 @@ Timer::Timer()
 
 void Timer::Start()
 {
-	m_TimerID = SetTimer(nullptr, ID_TIMER, 50, Timerproc);
+	m_TimerID = SetTimer(nullptr, ID_TIMER, 1, Timerproc);
 	m_bStarted = TRUE;
 	start = std::chrono::steady_clock::now();
 }

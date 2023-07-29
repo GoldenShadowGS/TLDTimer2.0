@@ -18,9 +18,10 @@ private:
 	//std::vector<BYTE> m_FlippedRawPixels;
 	//std::vector<BYTE> m_ExpandedPixels;
 public:
-	Bitmap();
-	bool Load(ID2D1HwndRenderTarget* rt, int resource, BYTE r, BYTE g, BYTE b, float pivotx, float pivoty, float scale);
+	~Bitmap();
+	HRESULT CreateGraphicsResources(ID2D1HwndRenderTarget* rt, int resource, BYTE r, BYTE g, BYTE b, float pivotx, float pivoty, float scale);
 	void Draw(ID2D1HwndRenderTarget* rt, float angle, float x, float y);
+	void DiscardGraphicsResources();
 private:
 	std::vector<BYTE> FileLoader(int resource);
 };

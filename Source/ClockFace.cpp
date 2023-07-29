@@ -4,20 +4,48 @@
 #include "Math.h"
 #include "Resource.h"
 
-
-void ClockFace::DiscardGraphicsResources()
-{
-	SafeRelease(&pBackGroundBrush);
-}
-
 HRESULT ClockFace::CreateGraphicsResources(ID2D1HwndRenderTarget* pRenderTarget)
 {
+	HRESULT hr = S_OK;
 	D2D1::ColorF color = D2D1::ColorF(0.3f, 0.3f, 0.3f, 1.0f);
-	HRESULT hr = pRenderTarget->CreateSolidColorBrush(color, &pBackGroundBrush);
+	if (pBackGroundBrush == nullptr)
+		hr = pRenderTarget->CreateSolidColorBrush(color, &pBackGroundBrush);
+	if (FAILED(hr))
+		return hr;
+
+	float scale = 0.6f;
+	//pivot offsets
+	float offsetx = 0.0565476f;
+	float offsety = 0.486842f;
+	hr = minutehandbitmap.CreateGraphicsResources(pRenderTarget, BITMAP_MINUTEHAND, 250, 10, 10, offsetx, offsety, scale);
+	if (FAILED(hr))
+		return hr;
+	hr = minutehandhighlightedbitmap.CreateGraphicsResources(pRenderTarget, BITMAP_MINUTEHAND, 222, 234, 207, offsetx, offsety, scale);
+	if (FAILED(hr))
+		return hr;
+	offsetx = 0.278274f;
+	offsety = 0.503289f;
+	hr = minutehandbitmapShadow.CreateGraphicsResources(pRenderTarget, BITMAP_MINUTEHANDSHADOW, 1, 1, 1, offsetx, offsety, scale);
+	if (FAILED(hr))
+		return hr;
+	offsetx = 0.088462f;
+	offsety = 0.48913f;
+	hr = hourhandbitmap.CreateGraphicsResources(pRenderTarget, BITMAP_HOURHAND, 30, 50, 30, offsetx, offsety, scale);
+	if (FAILED(hr))
+		return hr;
+	offsetx = 0.294231f;
+	offsety = 0.494565f;
+	hr = hourhandbitmapShadow.CreateGraphicsResources(pRenderTarget, BITMAP_HOURHANDSHADOW, 1, 1, 1, offsetx, offsety, scale);
 	if (FAILED(hr))
 		return hr;
 
 	return hr;
+}
+
+void ClockFace::DiscardGraphicsResources()
+{
+	SafeRelease(&pBackGroundBrush);
+	minutehandbitmap.DiscardGraphicsResources();
 }
 
 void ClockFace::DrawBackGround(ID2D1HwndRenderTarget* pRenderTarget)
@@ -38,25 +66,6 @@ void ClockFace::DrawBackGround(ID2D1HwndRenderTarget* pRenderTarget)
 			pRenderTarget->DrawLine((i % 5 == 0) ? pointa : pointb, point2, pBackGroundBrush, 2.5f);
 		}
 	}
-}
-
-void ClockFace::LoadBitmaps(ID2D1HwndRenderTarget* pRenderTarget)
-{
-	float scale = 0.6f;
-	//pivot offsets
-	float offsetx = 0.0565476f;
-	float offsety = 0.486842f;
-	minutehandbitmap.Load(pRenderTarget, BITMAP_MINUTEHAND, 250, 10, 10, offsetx, offsety, scale);
-	minutehandhighlightedbitmap.Load(pRenderTarget, BITMAP_MINUTEHAND, 222, 234, 207, offsetx, offsety, scale);
-	offsetx = 0.278274f;
-	offsety = 0.503289f;
-	minutehandbitmapShadow.Load(pRenderTarget, BITMAP_MINUTEHANDSHADOW, 1, 1, 1, offsetx, offsety, scale);
-	offsetx = 0.088462f;
-	offsety = 0.48913f;
-	hourhandbitmap.Load(pRenderTarget, BITMAP_HOURHAND, 30, 50, 30, offsetx, offsety, scale);
-	offsetx = 0.294231f;
-	offsety = 0.494565f;
-	hourhandbitmapShadow.Load(pRenderTarget, BITMAP_HOURHANDSHADOW, 1, 1, 1, offsetx, offsety, scale);
 }
 
 void ClockFace::DrawHands(ID2D1HwndRenderTarget* pRenderTarget, float minAgle, float hourAngle)

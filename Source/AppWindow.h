@@ -2,6 +2,7 @@
 #include "Direct2D.h"
 #include "DigitalClock.h"
 #include "ClockFace.h"
+#include "Math.h"
 
 class Application;
 class TimerWindow;
@@ -85,3 +86,23 @@ private:
 	BOOL MouseinWindow = FALSE;
 	UINT_PTR MouseTimerID {};
 };
+
+inline float angleNormalize(float angle)
+{
+	while (angle < 0.0f)
+	{
+		angle += PI2;
+	}
+	while (angle > PI2)
+	{
+		angle -= PI2;
+	}
+	return angle;
+}
+
+inline float getMouseAngle(int mousex, int mousey, float centerx, float centery, float offset)
+{
+	float x = (float)mousex - centerx;
+	float y = (float)mousey - centery;
+	return angleNormalize(atan2(y, x) - offset);
+}

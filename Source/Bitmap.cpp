@@ -19,69 +19,76 @@ std::vector<BYTE> FlipImage(std::vector<BYTE>& Image, int pitch, int height)
 	return FlippedPixels;
 }
 
-Bitmap::Bitmap()
-{}
-
-bool Bitmap::Load(ID2D1HwndRenderTarget* rt, int resource, BYTE r, BYTE g, BYTE b, float pivotx, float pivoty, float scale)
+Bitmap::~Bitmap()
 {
-	std::vector<BYTE> FlippedRawPixels;
-	std::vector<BYTE> ExpandedPixels;
+	DiscardGraphicsResources();
+}
 
+void Bitmap::DiscardGraphicsResources()
+{
+	SafeRelease(&pBitmap);
+}
 
-	std::vector<BYTE> RawPixels = FileLoader(resource);
-
-	ExpandedPixels.resize(RawPixels.size() * 4);
-	for (UINT64 i = 0; i < RawPixels.size(); i++)
+HRESULT Bitmap::CreateGraphicsResources(ID2D1HwndRenderTarget* rt, int resource, BYTE r, BYTE g, BYTE b, float pivotx, float pivoty, float scale)
+{
+	HRESULT hr = S_OK;
+	if (pBitmap == nullptr)
 	{
-		const size_t expandedindex = i * 4;
-		const float alpha = (255 - RawPixels[i]) / 255.0f;
-		ExpandedPixels[expandedindex + 0] = BYTE(b * alpha);
-		ExpandedPixels[expandedindex + 1] = BYTE(g * alpha);
-		ExpandedPixels[expandedindex + 2] = BYTE(r * alpha);
-		ExpandedPixels[expandedindex + 3] = BYTE(alpha * 255.0f);
-	}
-	m_Pivot = D2D1::Point2F(pivotx, pivoty);
-
-	D2D1_SIZE_U bitmapsize = {};
-	bitmapsize.width = m_PixelWidth;
-	bitmapsize.height = m_PixelHeight;
-	m_Size.width = (float)m_PixelWidth;
-	m_Size.height = (float)m_PixelHeight;
-
-	D2D1_BITMAP_PROPERTIES bitmapprops = {};
-	bitmapprops.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
-	bitmapprops.pixelFormat.alphaMode = D2D1_ALPHA_MODE_PREMULTIPLIED;
-	bitmapprops.dpiX = 96.0f;
-	bitmapprops.dpiY = 96.0f;
-	HRESULT hr = rt->CreateBitmap(bitmapsize, ExpandedPixels.data(), m_Pitch, bitmapprops, &pBitmap);
-	if (FAILED(hr))
-		return false;
-	//Rescale
-	if (scale != 1.0f)
-	{
-		ID2D1Bitmap* pScaledBitmap = nullptr;
-		D2D1_SIZE_F scaledsize = { bitmapsize.width * scale, bitmapsize.height * scale };
-		hr = rt->CreateCompatibleRenderTarget(scaledsize, &pBitmapRenderTarget);
-
-		pBitmapRenderTarget->BeginDraw();
-
-		D2D1_RECT_F BitmapRect = { 0.0f, 0.0f, scaledsize.width, scaledsize.height };
-		pBitmapRenderTarget->DrawBitmap(pBitmap, BitmapRect);
-		hr = pBitmapRenderTarget->EndDraw();
-
-		//After Drawing, retrieve the bitmap from the render target
-		hr = pBitmapRenderTarget->GetBitmap(&pScaledBitmap);
-		SafeRelease(&pBitmap);
-		SafeRelease(&pBitmapRenderTarget);
-		if (pScaledBitmap)
+		std::vector<BYTE> ExpandedPixels;
+		std::vector<BYTE> RawPixels = FileLoader(resource);
+		ExpandedPixels.resize(RawPixels.size() * 4);
+		for (UINT64 i = 0; i < RawPixels.size(); i++)
 		{
-			pBitmap = pScaledBitmap;
-			m_Size = pBitmap->GetSize();
+			const size_t expandedindex = i * 4;
+			const float alpha = (255 - RawPixels[i]) / 255.0f;
+			ExpandedPixels[expandedindex + 0] = BYTE(b * alpha);
+			ExpandedPixels[expandedindex + 1] = BYTE(g * alpha);
+			ExpandedPixels[expandedindex + 2] = BYTE(r * alpha);
+			ExpandedPixels[expandedindex + 3] = BYTE(alpha * 255.0f);
 		}
+		m_Pivot = D2D1::Point2F(pivotx, pivoty);
+
+		D2D1_SIZE_U bitmapsize = {};
+		bitmapsize.width = m_PixelWidth;
+		bitmapsize.height = m_PixelHeight;
+		m_Size.width = (float)m_PixelWidth;
+		m_Size.height = (float)m_PixelHeight;
+
+		D2D1_BITMAP_PROPERTIES bitmapprops = {};
+		bitmapprops.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
+		bitmapprops.pixelFormat.alphaMode = D2D1_ALPHA_MODE_PREMULTIPLIED;
+		bitmapprops.dpiX = 96.0f;
+		bitmapprops.dpiY = 96.0f;
+		HRESULT hr = rt->CreateBitmap(bitmapsize, ExpandedPixels.data(), m_Pitch, bitmapprops, &pBitmap);
+		if (FAILED(hr))
+			return hr;
+		//Rescale
+		if (scale != 1.0f)
+		{
+			ID2D1Bitmap* pScaledBitmap = nullptr;
+			D2D1_SIZE_F scaledsize = { bitmapsize.width * scale, bitmapsize.height * scale };
+			hr = rt->CreateCompatibleRenderTarget(scaledsize, &pBitmapRenderTarget);
+
+			pBitmapRenderTarget->BeginDraw();
+
+			D2D1_RECT_F BitmapRect = { 0.0f, 0.0f, scaledsize.width, scaledsize.height };
+			pBitmapRenderTarget->DrawBitmap(pBitmap, BitmapRect);
+			hr = pBitmapRenderTarget->EndDraw();
+
+			//After Drawing, retrieve the bitmap from the render target
+			hr = pBitmapRenderTarget->GetBitmap(&pScaledBitmap);
+			SafeRelease(&pBitmap);
+			SafeRelease(&pBitmapRenderTarget);
+			if (pScaledBitmap)
+			{
+				pBitmap = pScaledBitmap;
+				m_Size = pBitmap->GetSize();
+			}
+		}
+		halfwidth = m_Size.width * 0.5f;
+		halfheight = m_Size.height * 0.5f;
 	}
-	halfwidth = m_Size.width * 0.5f;
-	halfheight = m_Size.height * 0.5f;
-	return true;
+	return hr;
 }
 
 void Bitmap::Draw(ID2D1HwndRenderTarget* rt, float angle, float x, float y)

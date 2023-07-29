@@ -1,5 +1,9 @@
 #include "Resource.h"
 
+IDI_STOPWATCHICON           ICON                    "resources/coffee.ico"
+
+IDI_SMALLICON               ICON                    "resources/small_coffee.ico"
+
 SOUND_RATCHET1            WAVDATA                    "Resources/ratchet1.wav"
 SOUND_RATCHET2            WAVDATA                    "Resources/ratchet2.wav"
 SOUND_RATCHET3            WAVDATA                    "Resources/ratchet3.wav"

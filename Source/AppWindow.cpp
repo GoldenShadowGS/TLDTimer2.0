@@ -43,7 +43,6 @@ void AppWindow::Button::Init(ID2D1Factory* pD2DFactory, int Buttonvalue, int x, 
 		hr = Border.Sink->Close();
 		if (FAILED(hr)) return;
 	}
-
 }
 
 void AppWindow::Button::InitGeometry(ID2D1Factory* pD2DFactory, float width, float height)
@@ -358,35 +357,39 @@ void AppWindow::Button::DiscardGraphicsResources()
 
 HRESULT AppWindow::Button::CreateGraphicsResources(ID2D1HwndRenderTarget* pRenderTarget)
 {
+	HRESULT hr = S_OK;
 	D2D1::ColorF color = D2D1::ColorF(0.3f, 0.3f, 0.3f, 1.0f);
-	HRESULT hr = pRenderTarget->CreateSolidColorBrush(color, &pOutlineBrush);
+	if (pOutlineBrush == nullptr)
+		hr = pRenderTarget->CreateSolidColorBrush(color, &pOutlineBrush);
 	if (FAILED(hr))
 		return hr;
 
 	color = D2D1::ColorF(0.8f, 0.8f, 0.8f, 1.0f);
+	if (pFillBrush == nullptr)
 	hr = pRenderTarget->CreateSolidColorBrush(color, &pFillBrush);
 	if (FAILED(hr))
 		return hr;
 
 	color = D2D1::ColorF(0.9f, 0.9f, 0.9f, 1.0f);
+	if (pHoverBrush == nullptr)
 	hr = pRenderTarget->CreateSolidColorBrush(color, &pHoverBrush);
 	if (FAILED(hr))
 		return hr;
 
 	color = D2D1::ColorF(0.7f, 0.7f, 0.7f, 1.0f);
+	if (pPressedBrush == nullptr)
 	hr = pRenderTarget->CreateSolidColorBrush(color, &pPressedBrush);
 	if (FAILED(hr))
 		return hr;
 
 	color = D2D1::ColorF(0.35f, 0.35f, 0.35f, 1.0f);
+	if (pShapeBrush == nullptr)
 	hr = pRenderTarget->CreateSolidColorBrush(color, &pShapeBrush);
 	if (FAILED(hr))
 		return hr;
 
 	return hr;
 }
-
-
 
 
 AppWindow::AppWindow(HINSTANCE hInstance, Application* app) : hInst(hInstance), m_App(app)
@@ -469,7 +472,9 @@ BOOL AppWindow::Create(Timer* timer, int width, int height)
 
 HRESULT AppWindow::CreateGraphicsResources()
 {
-	HRESULT hr = m_Direct2DDevice.CreateRenderTargetHwnd(hWindow);
+	HRESULT hr = S_OK;
+
+	hr = m_Direct2DDevice.CreateRenderTargetHwnd(hWindow);
 	if (FAILED(hr))
 		return hr;
 	ID2D1HwndRenderTarget* pRenderTarget = m_Direct2DDevice.getD2DRenderTarget();
@@ -486,7 +491,7 @@ HRESULT AppWindow::CreateGraphicsResources()
 		if (FAILED(hr))
 			return hr;
 	}
-	m_ClockFace.LoadBitmaps(m_Direct2DDevice.getD2DRenderTarget());
+	m_ClockFace.CreateGraphicsResources(m_Direct2DDevice.getD2DRenderTarget());
 
 	return hr;
 }
@@ -531,7 +536,7 @@ void AppWindow::Paint()
 		INT64 splitms = m_pTimer->GetSplitMilliseconds();
 
 		m_ClockFace.DrawBackGround(pRenderTarget);
-		
+
 		float minangle = getMinuteAngleDeg(ms);
 		float hourangle = getHourAngleDeg(ms);
 		m_ClockFace.DrawHands(pRenderTarget, getMinuteAngleDeg(ms), getHourAngleDeg(ms));

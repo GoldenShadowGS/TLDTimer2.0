@@ -88,13 +88,16 @@ void DigitalClock::SevenSegment::InitGeometry(ID2D1Factory* pD2DFactory)
 
 HRESULT DigitalClock::CreateGraphicsResources(ID2D1HwndRenderTarget* pRenderTarget)
 {
+	HRESULT hr = S_OK;
 	D2D1::ColorF color = D2D1::ColorF(0.02f, 0.02f, 0.02f, 1.0f);
-	HRESULT hr = pRenderTarget->CreateSolidColorBrush(color, &pNormalBrush);
+	if (pNormalBrush == nullptr)
+		hr = pRenderTarget->CreateSolidColorBrush(color, &pNormalBrush);
 	if (FAILED(hr))
 		return hr;
 
 	color = D2D1::ColorF(0.8f, 0.04f, 0.04f, 1.0f);
-	hr = pRenderTarget->CreateSolidColorBrush(color, &pHighlightBrush);
+	if (pHighlightBrush == nullptr)
+		hr = pRenderTarget->CreateSolidColorBrush(color, &pHighlightBrush);
 	if (FAILED(hr))
 		return hr;
 
@@ -296,7 +299,7 @@ void DigitalClock::Draw(ID2D1HwndRenderTarget* pRenderTarget, D2D1::Matrix3x2F t
 		m_SevenSegment.Draw(pRenderTarget, digit, pBrush);
 	}
 	// Draw Tenths
-	if(bTenths)
+	if (bTenths)
 	{
 		DrawDot(pRenderTarget, pBrush);
 		spacing += DigitSpacing + DotSpacing;
