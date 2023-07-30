@@ -19,6 +19,6 @@ void Application::Init(HINSTANCE hInstance, LPWSTR lpCmdLine)
 	Alarm.Load(SOUND_ALARM);
 	Bwoop.Load(SOUND_BWOOP);
 	m_AppWindow.Init(hInstance, this);
-	if (!m_AppWindow.Create(&m_Timer, 440, 240))
+	if (!m_AppWindow.Create(&m_Timer, 440, 440))
 		throw std::exception("Window Creation Failed");
 }

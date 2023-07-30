@@ -407,15 +407,15 @@ void AppWindow::Init(HINSTANCE hInstance, Application* app)
 
 
 	int playX = 75;
-	int row1 = 135;
-	int row2 = 185;
+	int row1 = 135 + 200;
+	int row2 = 185 + 200;
 	int splitX = 150;
 
 	int resetx = 24;
-	int resety = 28;
+	int resety = 28 + 250;
 
 	int zerox = 44;
-	int zeroy = 226;
+	int zeroy = 226 + 200;
 
 	int addx = 50;
 	int incx = 100;
