@@ -42,7 +42,7 @@ inline float getMinuteAngleRad(INT64 ms)
 
 inline INT64 AngleToTime(float radians)
 {
-	return INT64((radians / PI2) * 60000.0f);
+	return INT64((radians / (double)PI2) * 60000.0);
 }
 
 class Timer
