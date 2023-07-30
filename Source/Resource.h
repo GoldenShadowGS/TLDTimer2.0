@@ -13,6 +13,7 @@
 #define SOUND_SPLIT                     207
 #define SOUND_RESET                     208
 #define SOUND_ALARM                     209
+#define SOUND_BWOOP                     210
 
 #define ID_TIMER                        301
 #define ID_REPEATTIMER                  302

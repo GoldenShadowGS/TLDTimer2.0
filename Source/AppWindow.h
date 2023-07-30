@@ -81,6 +81,7 @@ private:
 	int GrabbedElementRMB = -1;
 	BOOL GrabLock = FALSE;
 	BOOL Reseting = FALSE;
+	BOOL Adding = FALSE;
 	float mouseAngle = 0.0f;
 	float minuteHandangle = 0.0f;
 	D2D1::Matrix3x2F m_TransformMain{D2D1::Matrix3x2F::Scale(0.15f, 0.15f)* D2D1::Matrix3x2F::Translation(20, 78)};

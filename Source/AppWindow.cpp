@@ -506,6 +506,7 @@ void AppWindow::DiscardGraphicsResources()
 void AppWindow::Paint()
 {
 	static INT64 previousAlarmms = 0;
+	static INT64 previousHours = 0;
 	// Update minuteHandAngle to match clock
 	if (!GrabLock)
 	{
@@ -539,6 +540,12 @@ void AppWindow::Paint()
 			m_App->m_SoundManager.Play(m_App->Alarm, 1.0f, 1.0f);
 		}
 		previousAlarmms = alarmms;
+		{
+			INT64 hours = GetHours(absms);
+			if (hours > previousHours && !Adding)
+				m_App->m_SoundManager.Play(m_App->Bwoop, 1.0f, 1.0f);
+			previousHours = hours;
+		}
 		m_ClockFace.DrawBackGround(pRenderTarget);
 
 		m_ClockFace.DrawHands(pRenderTarget, minuteHandangle * Rad2DegFactor - 90, getHourAngleDeg(alarmms));
@@ -557,6 +564,7 @@ void AppWindow::Paint()
 		}
 		EndPaint(hWindow, &ps);
 		Reseting = FALSE;
+		Adding = FALSE;
 	}
 }
 
@@ -822,6 +830,7 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 				break;
 			case BUTTON_ADDTIME:
 				m_pTimer->AddTime(AddTime);
+				Adding = TRUE;
 				m_App->m_SoundManager.Play(m_App->TimerClick, 1.0f, 1.0f);
 				break;
 			case BUTTON_ZERO:

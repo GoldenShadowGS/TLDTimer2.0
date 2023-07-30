@@ -22,6 +22,7 @@ public:
 	WavFile SplitClick;
 	WavFile ResetClick;
 	WavFile Alarm;
+	WavFile Bwoop;
 private:
 	AppWindow m_AppWindow;
 };
