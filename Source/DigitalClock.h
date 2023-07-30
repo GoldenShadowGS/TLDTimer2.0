@@ -4,6 +4,7 @@
 class DigitalClock
 {
 public:
+	~DigitalClock();
 	void Init(ID2D1Factory* pD2DFactory);
 	void DiscardGraphicsResources();
 	HRESULT CreateGraphicsResources(ID2D1HwndRenderTarget* pRenderTarget);

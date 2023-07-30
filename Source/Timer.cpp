@@ -9,7 +9,7 @@ Timer::Timer()
 
 void Timer::Start()
 {
-	m_TimerID = SetTimer(nullptr, ID_TIMER, 1, Timerproc);
+	m_TimerID = SetTimer(nullptr, ID_TIMER, 50, Timerproc);
 	m_bStarted = TRUE;
 	start = std::chrono::steady_clock::now();
 }
@@ -31,6 +31,7 @@ void Timer::Reset()
 	m_CurrentMS_Duration = 0;
 	HWND window = m_Timer->AppWindow;
 	m_SplitMS_Duration = 0;
+	m_AlarmTime = 0;
 	if (window)
 	{
 		ReDraw(window);
@@ -65,12 +66,36 @@ INT64 Timer::GetSplitMilliseconds()
 
 void Timer::AddTime(INT64 time)
 {
+	BOOL IsAlarmSet = (GetAlarmTime() != 0);
 	m_CurrentMS_Duration += time * 5;
-	if (GetMilliseconds() < 0)
+	if (GetSplitMilliseconds() < 0)
 	{
 		start = std::chrono::steady_clock::now();
 		m_CurrentMS_Duration = 0;
+		m_SplitMS_Duration = 0;
 	}
+	if (!IsAlarmSet)
+		m_AlarmTime = GetSplitMilliseconds();
+}
+
+void Timer::AdjustAlarm(INT64 ms)
+{
+	m_AlarmTime += ms;
+	if (m_AlarmTime < GetSplitMilliseconds())
+	{
+		m_AlarmTime = GetSplitMilliseconds();
+	}
+}
+
+INT64 Timer::GetAlarmTime()
+{
+	INT64 timeremaining = m_AlarmTime - GetSplitMilliseconds();
+	if (timeremaining < 0)
+	{
+		timeremaining = 0;
+		m_AlarmTime = GetSplitMilliseconds();
+	}
+	return timeremaining;
 }
 
 void Timer::Timerproc(HWND hWnd, UINT Param2, UINT_PTR Param3, DWORD Param4)

@@ -8,7 +8,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 
 	try
 	{
-		std::unique_ptr<Application> clockapp = std::make_unique<Application>(hInstance, lpCmdLine);
+		Application clockapp;
+		clockapp.Init(hInstance, lpCmdLine);
 
 		MSG msg;
 		while (GetMessage(&msg, nullptr, 0, 0))

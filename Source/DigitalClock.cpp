@@ -3,6 +3,11 @@
 #include "Direct2D.h"
 #include "Math.h"
 
+DigitalClock::~DigitalClock()
+{
+	DiscardGraphicsResources();
+}
+
 void DigitalClock::SevenSegment::Segment::Init(ID2D1Factory* pD2DFactory, BOOL vertical, float longdist, float shortdist, float halfwidth, float sk, D2D1_POINT_2F offset)
 {
 	HRESULT hr = pD2DFactory->CreatePathGeometry(&Geometry);

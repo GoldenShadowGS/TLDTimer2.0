@@ -30,9 +30,6 @@
     <ClCompile Include="Source\AppWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\TimerWindow.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Direct2D.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -67,9 +64,6 @@
     </ClInclude>
     <ClInclude Include="Source\Resource.h">
       <Filter>Resource Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Timerwindow.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\Direct2D.h">
       <Filter>Header Files</Filter>

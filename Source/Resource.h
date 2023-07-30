@@ -27,6 +27,5 @@
 #define CLOCK_HANDLE                    408
 
 #define BITMAP_MINUTEHAND               501
-#define BITMAP_MINUTEHANDSHADOW         502
-#define BITMAP_HOURHAND                 503
-#define BITMAP_HOURHANDSHADOW           504
+#define BITMAP_HOURHAND                 502
+

@@ -1,6 +1,7 @@
 #include "PCH.h"
 #include "Sound.h"
 #include "Timer.h"
+#include "AppWindow.h"
 
 class AppWindow;
 class TimerWindow;
@@ -9,7 +10,7 @@ class Direct2DDevice;
 class Application
 {
 public:
-	Application(HINSTANCE hInstance, LPWSTR lpCmdLine);
+	void Init(HINSTANCE hInstance, LPWSTR lpCmdLine);
 	Timer m_Timer;
 	SoundManager m_SoundManager;
 	WavFile Ratchet1;
@@ -22,6 +23,5 @@ public:
 	WavFile ResetClick;
 	WavFile Alarm;
 private:
-	std::shared_ptr<AppWindow> m_AppWindow;
-	//std::shared_ptr<TimerWindow> m_TimerWindow;
+	AppWindow m_AppWindow;
 };

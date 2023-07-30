@@ -1,7 +1,6 @@
 #include "PCH.h"
 #include "AppWindow.h"
 #include "Application.h"
-#include "Timerwindow.h"
 #include "Resource.h"
 #include "Timer.h"
 #include "Math.h"
@@ -346,7 +345,7 @@ int AppWindow::Button::HitTest(int x, int y)
 		return -1;
 }
 
-void AppWindow::Button::DiscardGraphicsResources()
+void AppWindow::Button::DiscardButtonGraphicsResources()
 {
 	SafeRelease(&pOutlineBrush);
 	SafeRelease(&pFillBrush);
@@ -355,7 +354,7 @@ void AppWindow::Button::DiscardGraphicsResources()
 	SafeRelease(&pShapeBrush);
 }
 
-HRESULT AppWindow::Button::CreateGraphicsResources(ID2D1HwndRenderTarget* pRenderTarget)
+HRESULT AppWindow::Button::CreateButtonGraphicsResources(ID2D1HwndRenderTarget* pRenderTarget)
 {
 	HRESULT hr = S_OK;
 	D2D1::ColorF color = D2D1::ColorF(0.3f, 0.3f, 0.3f, 1.0f);
@@ -366,25 +365,25 @@ HRESULT AppWindow::Button::CreateGraphicsResources(ID2D1HwndRenderTarget* pRende
 
 	color = D2D1::ColorF(0.8f, 0.8f, 0.8f, 1.0f);
 	if (pFillBrush == nullptr)
-	hr = pRenderTarget->CreateSolidColorBrush(color, &pFillBrush);
+		hr = pRenderTarget->CreateSolidColorBrush(color, &pFillBrush);
 	if (FAILED(hr))
 		return hr;
 
 	color = D2D1::ColorF(0.9f, 0.9f, 0.9f, 1.0f);
 	if (pHoverBrush == nullptr)
-	hr = pRenderTarget->CreateSolidColorBrush(color, &pHoverBrush);
+		hr = pRenderTarget->CreateSolidColorBrush(color, &pHoverBrush);
 	if (FAILED(hr))
 		return hr;
 
 	color = D2D1::ColorF(0.7f, 0.7f, 0.7f, 1.0f);
 	if (pPressedBrush == nullptr)
-	hr = pRenderTarget->CreateSolidColorBrush(color, &pPressedBrush);
+		hr = pRenderTarget->CreateSolidColorBrush(color, &pPressedBrush);
 	if (FAILED(hr))
 		return hr;
 
 	color = D2D1::ColorF(0.35f, 0.35f, 0.35f, 1.0f);
 	if (pShapeBrush == nullptr)
-	hr = pRenderTarget->CreateSolidColorBrush(color, &pShapeBrush);
+		hr = pRenderTarget->CreateSolidColorBrush(color, &pShapeBrush);
 	if (FAILED(hr))
 		return hr;
 
@@ -392,8 +391,10 @@ HRESULT AppWindow::Button::CreateGraphicsResources(ID2D1HwndRenderTarget* pRende
 }
 
 
-AppWindow::AppWindow(HINSTANCE hInstance, Application* app) : hInst(hInstance), m_App(app)
+void AppWindow::Init(HINSTANCE hInstance, Application* app)
 {
+	hInst = hInstance;
+	m_App = app;
 	RegisterWindowClass(hInstance);
 	m_Direct2DDevice.InitializeFactory();
 	m_DigitalClock.Init(m_Direct2DDevice.getD2DFactory());
@@ -432,6 +433,11 @@ AppWindow::AppWindow(HINSTANCE hInstance, Application* app) : hInst(hInstance), 
 	m_Buttons[6].Init(m_Direct2DDevice.getD2DFactory(), BUTTON_ZERO, zerox, zeroy, smwidth, smheight);
 }
 
+AppWindow::~AppWindow()
+{
+	DiscardGraphicsResources();
+}
+
 BOOL AppWindow::Create(Timer* timer, int width, int height)
 {
 	m_pTimer = timer;
@@ -458,9 +464,6 @@ BOOL AppWindow::Create(Timer* timer, int width, int height)
 		return FALSE;
 
 	SetWindowLongPtrW(hWindow, GWLP_USERDATA, (INT64)this);
-	//SetLayeredWindowAttributes(hWindow, RGB(0, 0, 0), 255, LWA_COLORKEY);
-
-	windowAlive = TRUE;
 
 	ShowWindow(hWindow, SW_SHOW);
 	UpdateWindow(hWindow);
@@ -485,13 +488,9 @@ HRESULT AppWindow::CreateGraphicsResources()
 	if (FAILED(hr))
 		return hr;
 
-	for (int i = 0; i < ButtonCount; i++)
-	{
-		hr = m_Buttons[i].CreateGraphicsResources(pRenderTarget);
-		if (FAILED(hr))
-			return hr;
-	}
-	m_ClockFace.CreateGraphicsResources(m_Direct2DDevice.getD2DRenderTarget());
+	hr = AppWindow::Button::CreateButtonGraphicsResources(pRenderTarget);
+	if (FAILED(hr))
+		return hr;
 
 	return hr;
 }
@@ -501,20 +500,18 @@ void AppWindow::DiscardGraphicsResources()
 	m_Direct2DDevice.ReleaseGraphicsResources();
 	m_DigitalClock.DiscardGraphicsResources();
 	m_ClockFace.DiscardGraphicsResources();
-	for (int i = 0; i < ButtonCount; i++)
-	{
-		m_Buttons[i].DiscardGraphicsResources();
-	}
-}
-
-void AppWindow::KillWindow()
-{
-	windowAlive = FALSE;
-	DestroyWindow(GetwindowHandle());
+	AppWindow::Button::DiscardButtonGraphicsResources();
 }
 
 void AppWindow::Paint()
 {
+	static INT64 previousAlarmms = 0;
+	// Update minuteHandAngle to match clock
+	if (!GrabLock)
+	{
+		minuteHandangle = getMinuteAngleRad(m_pTimer->GetAlarmTime());
+	}
+
 	HRESULT hr = CreateGraphicsResources();
 	if (SUCCEEDED(hr))
 	{
@@ -529,22 +526,29 @@ void AppWindow::Paint()
 		pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
 		for (int i = 0; i < ButtonCount; i++)
 		{
-			m_Buttons[i].Draw(pRenderTarget, m_pTimer->isStarted(), (AddTime < 0), HoverElement, GrabbedElement);
+			m_Buttons[i].Draw(pRenderTarget, m_pTimer->isStarted(), (GrabbedElementRMB == BUTTON_ADDTIME), HoverElement, GrabbedElementLMB);
 		}
 
 		INT64 ms = m_pTimer->GetMilliseconds();
+		INT64 absms = abs(ms);
 		INT64 splitms = m_pTimer->GetSplitMilliseconds();
 
+		INT64 alarmms = m_pTimer->GetAlarmTime();
+		if (alarmms == 0 && previousAlarmms > 0 && !GrabLock && !Reseting)
+		{
+			m_App->m_SoundManager.Play(m_App->Alarm, 1.0f, 1.0f);
+		}
+		previousAlarmms = alarmms;
 		m_ClockFace.DrawBackGround(pRenderTarget);
 
-		float minangle = getMinuteAngleDeg(ms);
-		float hourangle = getHourAngleDeg(ms);
-		m_ClockFace.DrawHands(pRenderTarget, getMinuteAngleDeg(ms), getHourAngleDeg(ms));
+		m_ClockFace.DrawHands(pRenderTarget, minuteHandangle * Rad2DegFactor - 90, getHourAngleDeg(alarmms));
 
-		m_DigitalClock.Draw(pRenderTarget, m_TransformMain, FALSE, (ms && (HoverElement == BUTTON_RESET || HoverElement == BUTTON_SPLIT)), TRUE, GetDays(ms), GetHours(ms), GetMinutes(ms), GetTenths(ms));
+		m_DigitalClock.Draw(pRenderTarget, m_TransformMain, (ms < 0), (absms && (HoverElement == BUTTON_RESET || HoverElement == BUTTON_SPLIT)), TRUE, GetDays(absms), GetHours(absms), GetMinutes(absms), GetTenths(absms));
 		m_DigitalClock.Draw(pRenderTarget, m_TransformSub, FALSE, (splitms && (HoverElement == BUTTON_RESET)), TRUE, GetDays(splitms), GetHours(splitms), GetMinutes(splitms), GetTenths(splitms));
 		INT64 absTime = abs(AddTime);
-		m_DigitalClock.Draw(pRenderTarget, m_TransformAddtime, (AddTime < 0), (AddTime && (HoverElement == BUTTON_ZERO)), FALSE, GetDays(absTime), GetHours(absTime), GetMinutes(absTime), GetTenths(absTime));
+		m_DigitalClock.Draw(pRenderTarget, m_TransformAddtime, FALSE, (AddTime && (HoverElement == BUTTON_ZERO)), FALSE, GetDays(absTime), GetHours(absTime), GetMinutes(absTime), GetTenths(absTime));
+		if (alarmms)
+			m_DigitalClock.Draw(pRenderTarget, m_TransformAlarm, FALSE, FALSE, TRUE, GetDays(alarmms), GetHours(alarmms), GetMinutes(alarmms), GetTenths(alarmms));
 
 		hr = pRenderTarget->EndDraw();
 		if (FAILED(hr) || hr == D2DERR_RECREATE_TARGET)
@@ -552,6 +556,7 @@ void AppWindow::Paint()
 			m_Direct2DDevice.ReleaseGraphicsResources();
 		}
 		EndPaint(hWindow, &ps);
+		Reseting = FALSE;
 	}
 }
 
@@ -608,6 +613,78 @@ void AppWindow::DecrementTime()
 		AddTime -= 1440000;
 	else
 		AddTime -= 1000;
+	if (AddTime < 0)
+		AddTime = 0;
+}
+
+BOOL AppWindow::CheckMouseHand(int mousex, int mousey)
+{
+	float dist = GetPointDist((float)mousex, (float)mousey, m_ClockFace.GetCenterX(), m_ClockFace.GetCenterY());
+	if (dist < m_ClockFace.GetRadius() && dist > 18.0f)
+	{
+		mouseAngle = getMouseAngle(mousex, mousey, m_ClockFace.GetCenterX(), m_ClockFace.GetCenterY(), -HalfPI);
+		float mouseHandAngle = GetAngleDistance(mouseAngle, minuteHandangle);
+		float radialratio = dist / m_ClockFace.GetRadius();
+		float angulardist = mouseHandAngle * radialratio;
+		return angulardist < 0.15f;
+	}
+	return FALSE;
+}
+
+void AppWindow::MouseAdjustAlarm(int mousex, int mousey)
+{
+	mouseAngle = getMouseAngle(mousex, mousey, m_ClockFace.GetCenterX(), m_ClockFace.GetCenterY(), -HalfPI);
+	float previousAngle = minuteHandangle;
+	minuteHandangle = mouseAngle;
+	float angledif = angleNormalize(minuteHandangle - previousAngle);
+	if (angledif > PI)
+		angledif -= PI2;
+	INT64 timeadjustment = AngleToTime(angledif);
+	m_pTimer->AdjustAlarm(timeadjustment);
+	INT64 newalarmtime = m_pTimer->GetAlarmTime();
+	if (newalarmtime == 0)
+	{
+		if (minuteHandangle < 6.0f && minuteHandangle > PI)
+		{
+			GrabLock = FALSE;
+			m_App->m_SoundManager.Play(m_App->SplitClick, 1.0f, 1.0f);
+		}
+		minuteHandangle = 0.0f;
+	}
+	else
+	{
+		static INT64 accumlatedTime = 0;
+		static int minticks = 0;
+		minticks++;
+		accumlatedTime += abs(timeadjustment);
+		if (accumlatedTime > 5000 && minticks > 4)
+		{
+			minticks = 0;
+			accumlatedTime -= 5000;
+			if (accumlatedTime > 5000)
+				accumlatedTime = 0;
+			float speed = abs(angledif);
+			float pitch = min(1.0f, max(0.7f, speed * 5.0f));
+			float vol = min(1.0f, max(0.5f, speed * 5.0f + 0.25f));
+
+			static int index = 0;
+			index++;
+			if (index > 2)
+				index = 0;
+			switch (index)
+			{
+			case 0:
+				m_App->m_SoundManager.Play(m_App->Ratchet1, vol, pitch);
+				break;
+			case 1:
+				m_App->m_SoundManager.Play(m_App->Ratchet2, vol, pitch);
+				break;
+			case 2:
+				m_App->m_SoundManager.Play(m_App->Ratchet3, vol, pitch);
+				break;
+			}
+		}
+	}
 }
 
 LRESULT CALLBACK AppWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -634,7 +711,8 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 	{
 		MouseinWindow = FALSE;
 		HoverElement = -1;
-		GrabbedElement = -1;
+		GrabbedElementLMB = -1;
+		GrabLock = FALSE;
 		RECT rc;
 		GetClientRect(hWnd, &rc);
 		InvalidateRect(hWnd, &rc, TRUE);
@@ -650,23 +728,30 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 		}
 		int OldHoverElement = HoverElement;
 		HoverElement = -1;
-		for (int i = 0; i < ButtonCount; i++)
-		{
-			int button = m_Buttons[i].HitTest(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
-			if (button > 0)
-			{
-				HoverElement = button;
-			}
-		}
-		if (GrabbedElement != HoverElement)
-		{
-			GrabbedElement = -1;
-		}
-		if (OldHoverElement != HoverElement)
+		if (GrabLock)
 		{
 			RECT rc;
 			GetClientRect(hWnd, &rc);
 			InvalidateRect(hWnd, &rc, TRUE);
+			MouseAdjustAlarm(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+		}
+		else
+		{
+			for (int i = 0; i < ButtonCount; i++)
+			{
+				int button = m_Buttons[i].HitTest(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+				if (button > 0)
+				{
+					HoverElement = button;
+				}
+			}
+			if (OldHoverElement != HoverElement)
+			{
+				GrabbedElementLMB = -1;
+				RECT rc;
+				GetClientRect(hWnd, &rc);
+				InvalidateRect(hWnd, &rc, TRUE);
+			}
 		}
 	}
 	break;
@@ -674,19 +759,35 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 	{
 		MouseDelay = 0;
 		SetRepeatTimer();
-		GrabbedElement = HoverElement;
+
+
+		mouseAngle = getMouseAngle(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), m_ClockFace.GetCenterX(), m_ClockFace.GetCenterY(), -HalfPI);
+		float mouseHandAngle = GetAngleDistance(mouseAngle, minuteHandangle);
+
+		if (CheckMouseHand(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)))
 		{
-			RECT rc;
-			GetClientRect(hWnd, &rc);
-			InvalidateRect(hWnd, &rc, TRUE);
+			MouseAdjustAlarm(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
+			GrabbedElementLMB = CLOCK_HANDLE;
+			GrabLock = TRUE;
+			SetCapture(hWnd);
 		}
+		else
+		{
+			if (GrabbedElementRMB == -1)
+				GrabbedElementLMB = HoverElement;
+		}
+		RECT rc;
+		GetClientRect(hWnd, &rc);
+		InvalidateRect(hWnd, &rc, TRUE);
 	}
 	break;
 	case WM_LBUTTONUP:
 	{
-		if (HoverElement == GrabbedElement)
+		ReleaseCapture();
+		GrabLock = FALSE;
+		if (HoverElement == GrabbedElementLMB)
 		{
-			switch (GrabbedElement)
+			switch (GrabbedElementLMB)
 			{
 			case BUTTON_START:
 			{
@@ -707,6 +808,7 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 				m_App->m_SoundManager.Play(m_App->SplitClick, 1.0f, 1.0f);
 				break;
 			case BUTTON_RESET:
+				Reseting = TRUE;
 				m_pTimer->Reset();
 				m_App->m_SoundManager.Play(m_App->ResetClick, 1.0f, 1.0f);
 				break;
@@ -728,7 +830,36 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 				break;
 			}
 		}
-		GrabbedElement = -1;
+		GrabbedElementLMB = -1;
+		{
+			RECT rc;
+			GetClientRect(hWnd, &rc);
+			InvalidateRect(hWnd, &rc, TRUE);
+		}
+	}
+	break;
+	case WM_RBUTTONDOWN:
+	{
+		if (GrabbedElementLMB == -1)
+			GrabbedElementRMB = HoverElement;
+		{
+			RECT rc;
+			GetClientRect(hWnd, &rc);
+			InvalidateRect(hWnd, &rc, TRUE);
+		}
+	}
+	break;
+	case WM_RBUTTONUP:
+	{
+		if (HoverElement == GrabbedElementRMB)
+		{
+			if (GrabbedElementRMB == BUTTON_ADDTIME)
+			{
+				m_pTimer->AddTime(-AddTime);
+				m_App->m_SoundManager.Play(m_App->TimerClick, 1.0f, 1.0f);
+			}
+		}
+		GrabbedElementRMB = -1;
 		{
 			RECT rc;
 			GetClientRect(hWnd, &rc);
@@ -740,9 +871,9 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 	{
 		if (MouseDelay > 6)
 		{
-			if (GrabbedElement == BUTTON_INCTIME)
+			if (GrabbedElementLMB == BUTTON_INCTIME)
 				IncrementTime();
-			else if (GrabbedElement == BUTTON_DECTIME)
+			else if (GrabbedElementLMB == BUTTON_DECTIME)
 				DecrementTime();
 			else
 				KillRepeatTimer();
@@ -761,3 +892,36 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 	}
 	return 0;
 }
+
+//static float distance = 0.0f;
+//float mouseX = (float)GET_X_LPARAM(lParam);
+//float mouseY = (float)GET_Y_LPARAM(lParam);
+//
+//float newdist = GetPointDist(mouseX, mouseY, PrevX, PrevY);
+//float pitch = newdist;
+//float vol = min(2.0f, newdist / 4.0f + 0.25f);
+//PrevX = mouseX;
+//PrevY = mouseY;
+//distance += newdist;
+//const float clickrate = 100;
+//if (distance > clickrate)
+//{
+//	distance -= clickrate;
+//	static int index = 0;
+//	index++;
+//	if (index > 2)
+//		index = 0;
+//	switch (index)
+//	{
+//	case 0:
+//		m_App->m_SoundManager.Play(m_App->Ratchet1, vol, pitch);
+//		break;
+//	case 1:
+//		m_App->m_SoundManager.Play(m_App->Ratchet2, vol, pitch);
+//		break;
+//	case 2:
+//		m_App->m_SoundManager.Play(m_App->Ratchet3, vol, pitch);
+//		break;
+//	}
+//
+//}

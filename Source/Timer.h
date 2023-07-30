@@ -1,5 +1,6 @@
 #pragma once
 #include "PCH.h"
+#include "Math.h"
 
 inline INT64 GetTenths(INT64 ms)
 {
@@ -33,6 +34,17 @@ inline float getHourAngleDeg(INT64 ms)
 	return fmod(minutes, 12.0f) / 12.0f * 360.0f - 90;
 }
 
+inline float getMinuteAngleRad(INT64 ms)
+{
+	float minutes = float(ms) / 1000.0f;
+	return (fmod(minutes, 60.0f) / 60.0f) * PI2;
+}
+
+inline INT64 AngleToTime(float radians)
+{
+	return INT64((radians / PI2) * 60000.0f);
+}
+
 class Timer
 {
 public:
@@ -47,6 +59,8 @@ public:
 	void Split();
 	INT64 GetSplitMilliseconds();
 	void AddTime(INT64 time);
+	void AdjustAlarm(INT64 ms);
+	INT64 GetAlarmTime();
 private:
 	HWND AppWindow = nullptr;
 	HWND TimerWindow = nullptr;
@@ -56,6 +70,7 @@ private:
 	BOOL m_bStarted = FALSE;
 	UINT_PTR m_TimerID {};
 	std::chrono::time_point<std::chrono::steady_clock> start;
+	INT64 m_AlarmTime = 0;
 	INT64 m_CurrentMS_Duration = 0;
 	INT64 m_SplitMS_Duration = 0;
 };

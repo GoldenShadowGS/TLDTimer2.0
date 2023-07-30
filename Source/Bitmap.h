@@ -13,10 +13,6 @@ private:
 	D2D1_SIZE_F m_Size = {};
 	float halfwidth = 0.0f;
 	float halfheight = 0.0f;
-	//float m_angleoffsetDeg = 0.0f;
-	//std::vector<BYTE> m_RawPixels;
-	//std::vector<BYTE> m_FlippedRawPixels;
-	//std::vector<BYTE> m_ExpandedPixels;
 public:
 	~Bitmap();
 	HRESULT CreateGraphicsResources(ID2D1HwndRenderTarget* rt, int resource, BYTE r, BYTE g, BYTE b, float pivotx, float pivoty, float scale);

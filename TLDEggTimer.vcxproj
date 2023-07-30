@@ -32,7 +32,6 @@
     <ClCompile Include="Source\ResourceLoader.cpp" />
     <ClCompile Include="Source\Sound.cpp" />
     <ClCompile Include="Source\Timer.cpp" />
-    <ClCompile Include="Source\TimerWindow.cpp" />
     <ClCompile Include="Source\AppWindow.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -48,7 +47,6 @@
     <ClInclude Include="Source\ResourceLoader.h" />
     <ClInclude Include="Source\Sound.h" />
     <ClInclude Include="Source\Timer.h" />
-    <ClInclude Include="Source\Timerwindow.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Source\Resource.rc" />
