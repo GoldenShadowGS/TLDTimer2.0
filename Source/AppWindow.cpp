@@ -334,6 +334,12 @@ void AppWindow::Button::Draw(ID2D1HwndRenderTarget* pRenderTarget, BOOL timing, 
 	case BUTTON_ZERO:
 		pRenderTarget->FillGeometry(Reset.Geometry, pShapeBrush);
 		break;
+	case BUTTON_TIMEOFDAYINC:
+		pRenderTarget->FillGeometry(Increment.Geometry, pShapeBrush);
+		break;
+	case BUTTON_TIMEOFDAYDEC:
+		pRenderTarget->FillGeometry(Decrement.Geometry, pShapeBrush);
+		break;
 	}
 }
 
@@ -395,6 +401,7 @@ void AppWindow::Init(HINSTANCE hInstance, Application* app)
 {
 	hInst = hInstance;
 	m_App = app;
+	timeofdayincrement = 1.0f / 192.0f * PI2;
 	RegisterWindowClass(hInstance);
 	m_Direct2DDevice.InitializeFactory();
 	m_DigitalClock.Init(m_Direct2DDevice.getD2DFactory());
@@ -421,7 +428,11 @@ void AppWindow::Init(HINSTANCE hInstance, Application* app)
 	int incx = 100;
 	int decx = 150;
 
+	int sunincx = 300;
+	int sundecx = 350;
+
 	AppWindow::Button::InitGeometry(m_Direct2DDevice.getD2DFactory(), buttonwidth, buttonheight);
+	m_ClockFace.InitGeometry(m_Direct2DDevice.getD2DFactory(), 12.0);
 	m_Buttons[0].Init(m_Direct2DDevice.getD2DFactory(), BUTTON_START, playX, row1, startbuttonwidth, buttonheight);
 	m_Buttons[1].Init(m_Direct2DDevice.getD2DFactory(), BUTTON_SPLIT, splitX, row1, buttonwidth, buttonheight);
 
@@ -431,6 +442,9 @@ void AppWindow::Init(HINSTANCE hInstance, Application* app)
 	m_Buttons[4].Init(m_Direct2DDevice.getD2DFactory(), BUTTON_INCTIME, incx, row2, buttonwidth, buttonheight);
 	m_Buttons[5].Init(m_Direct2DDevice.getD2DFactory(), BUTTON_DECTIME, decx, row2, buttonwidth, buttonheight);
 	m_Buttons[6].Init(m_Direct2DDevice.getD2DFactory(), BUTTON_ZERO, zerox, zeroy, smwidth, smheight);
+
+	m_Buttons[7].Init(m_Direct2DDevice.getD2DFactory(), BUTTON_TIMEOFDAYINC, sunincx, row2, buttonwidth, buttonheight);
+	m_Buttons[8].Init(m_Direct2DDevice.getD2DFactory(), BUTTON_TIMEOFDAYDEC, sundecx, row2, buttonwidth, buttonheight);
 }
 
 AppWindow::~AppWindow()
@@ -546,6 +560,9 @@ void AppWindow::Paint()
 				m_App->m_SoundManager.Play(m_App->Bwoop, 1.0f, 1.0f);
 			previousHours = hours;
 		}
+
+		m_ClockFace.DrawSunMoon(pRenderTarget, getDayAngleRad(splitms) + timeofDayOffset);
+
 		m_ClockFace.DrawBackGround(pRenderTarget);
 
 		m_ClockFace.DrawHands(pRenderTarget, minuteHandangle * Rad2DegFactor - 90, getHourAngleDeg(alarmms));
@@ -837,6 +854,14 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 				AddTime = 0;
 				m_App->m_SoundManager.Play(m_App->TimerClick, 1.0f, 1.0f);
 				break;
+			case BUTTON_TIMEOFDAYINC:
+				timeofDayOffset += timeofdayincrement;
+				m_App->m_SoundManager.Play(m_App->TimerClick, 1.0f, 1.0f);
+				break;
+			case BUTTON_TIMEOFDAYDEC:
+				timeofDayOffset -= timeofdayincrement;
+				m_App->m_SoundManager.Play(m_App->TimerClick, 1.0f, 1.0f);
+				break;
 			}
 		}
 		GrabbedElementLMB = -1;
@@ -884,6 +909,10 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 				IncrementTime();
 			else if (GrabbedElementLMB == BUTTON_DECTIME)
 				DecrementTime();
+			else if (GrabbedElementLMB == BUTTON_TIMEOFDAYINC)
+				timeofDayOffset += timeofdayincrement;
+			else if (GrabbedElementLMB == BUTTON_TIMEOFDAYDEC)
+				timeofDayOffset -= timeofdayincrement;
 			else
 				KillRepeatTimer();
 			RECT rc;

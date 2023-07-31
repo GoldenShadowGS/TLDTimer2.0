@@ -34,6 +34,12 @@ inline float getHourAngleDeg(INT64 ms)
 	return fmod(minutes, 12.0f) / 12.0f * 360.0f - 90;
 }
 
+inline float getDayAngleRad(INT64 ms)
+{
+	float hours = float(ms) / 60000.0f;
+	return fmod(hours, 24.0f) / 24.0f * PI2 - HalfPI;
+}
+
 inline float getMinuteAngleRad(INT64 ms)
 {
 	float minutes = float(ms) / 1000.0f;

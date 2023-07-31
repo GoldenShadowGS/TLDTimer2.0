@@ -74,7 +74,7 @@ private:
 	Direct2DDevice m_Direct2DDevice;
 	DigitalClock m_DigitalClock;
 	ClockFace m_ClockFace;
-	static const int ButtonCount = 7;
+	static const int ButtonCount = 9;
 	Button m_Buttons[ButtonCount];
 	int HoverElement = -1;
 	int GrabbedElementLMB = -1;
@@ -89,7 +89,8 @@ private:
 	D2D1::Matrix3x2F m_TransformSub{D2D1::Matrix3x2F::Scale(0.1f, 0.1f)* D2D1::Matrix3x2F::Translation(46, 28 + 100)};
 	D2D1::Matrix3x2F m_TransformAddtime{D2D1::Matrix3x2F::Scale(0.1f, 0.1f)* D2D1::Matrix3x2F::Translation(70, 226 + buttonoffset)};
 	D2D1::Matrix3x2F m_TransformAlarm{D2D1::Matrix3x2F::Scale(0.1f, 0.1f)* D2D1::Matrix3x2F::Translation(260, 150 )};
-
+	float timeofdayincrement = 0.0f;
+	float timeofDayOffset = 0.0f;
 	INT64 AddTime = 0;
 	Timer* m_pTimer;
 	BOOL MouseinWindow = FALSE;

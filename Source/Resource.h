@@ -27,6 +27,9 @@
 #define BUTTON_ZERO                     407
 #define CLOCK_HANDLE                    408
 
+#define BUTTON_TIMEOFDAYINC             409
+#define BUTTON_TIMEOFDAYDEC             410
+
 #define BITMAP_MINUTEHAND               501
 #define BITMAP_HOURHAND                 502
 
