@@ -14,12 +14,11 @@ public:
 	class Button
 	{
 	public:
-		void Init(ID2D1Factory* pD2DFactory, int Buttonvalue, int x, int y, int w, int h);
-		static void InitGeometry(ID2D1Factory* pD2DFactory, float width, float height);
-		void Draw(ID2D1HwndRenderTarget* pRenderTarget, BOOL timing, BOOL negative, int hover, int grab);
+		void Init(ID2D1Factory2* pD2DFactory, int Buttonvalue, int x, int y, int w, int h);
+		static void InitGeometry(ID2D1Factory2* pD2DFactory, float width, float height);
+		void Draw(ID2D1DeviceContext* pRenderTarget, BOOL timing, BOOL negative, int hover, int grab);
 		int HitTest(int x, int y);
-		static void DiscardButtonGraphicsResources();
-		static HRESULT CreateButtonGraphicsResources(ID2D1HwndRenderTarget* pRenderTarget);
+		static void CreateButtonGraphicsResources(ID2D1DeviceContext* pRenderTarget);
 		RECT GetRect() { return HitTestRect; }
 	private:
 		RECT HitTestRect {};
@@ -29,9 +28,8 @@ public:
 		float height = 0.0f;
 		struct Shape
 		{
-			~Shape();
-			ID2D1PathGeometry* Geometry = nullptr;
-			ID2D1GeometrySink* Sink = nullptr;
+			ComPtr<ID2D1PathGeometry> Geometry;
+			ComPtr<ID2D1GeometrySink> Sink;
 		};
 		Shape Border;
 		static inline Shape Play;
@@ -42,21 +40,23 @@ public:
 		static inline Shape Decrement;
 		static inline Shape Add;
 		static inline Shape Sub;
-		static inline ID2D1SolidColorBrush* pOutlineBrush = nullptr;
-		static inline ID2D1SolidColorBrush* pFillBrush = nullptr;
-		static inline ID2D1SolidColorBrush* pHoverBrush = nullptr;
-		static inline ID2D1SolidColorBrush* pPressedBrush = nullptr;
-		static inline ID2D1SolidColorBrush* pShapeBrush = nullptr;
+		static inline ComPtr<ID2D1SolidColorBrush> pOutlineBrush;
+		static inline ComPtr<ID2D1SolidColorBrush> pFillBrush;
+		static inline ComPtr<ID2D1SolidColorBrush> pHoverBrush;
+		static inline ComPtr<ID2D1SolidColorBrush> pPressedBrush;
+		static inline ComPtr<ID2D1SolidColorBrush> pShapeBrush;
 		int m_ButtonValue = -1;
 	};
-	~AppWindow();
+	//~AppWindow();
 	void Init(HINSTANCE hInstance, Application* app);
 	BOOL Create(Timer* timer, int width, int height);
-	HRESULT CreateGraphicsResources();
-	void DiscardGraphicsResources();
+	void CreateGraphicsResources();
+	//void DiscardGraphicsResources();
 	void Paint();
+	void Paint2();
 	static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 	HWND GetwindowHandle() { return hWindow; }
+	Renderer m_Renderer;
 private:
 	ATOM RegisterWindowClass(HINSTANCE hInstance);
 	LRESULT CALLBACK ClassWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
@@ -71,7 +71,7 @@ private:
 	HINSTANCE hInst;
 	HWND hWindow = nullptr;
 	Application* m_App;
-	Direct2DDevice m_Direct2DDevice;
+	//Direct2DDevice m_Direct2DDevice;
 	DigitalClock m_DigitalClock;
 	ClockFace m_ClockFace;
 	static const int ButtonCount = 9;

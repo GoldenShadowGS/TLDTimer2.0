@@ -4,397 +4,7 @@
 #include "Resource.h"
 #include "Timer.h"
 #include "Math.h"
-
-AppWindow::Button::Shape::~Shape()
-{
-	SafeRelease(&Geometry);
-	SafeRelease(&Sink);
-}
-
-void AppWindow::Button::Init(ID2D1Factory* pD2DFactory, int Buttonvalue, int x, int y, int w, int h)
-{
-	HitTestRect = { x - w / 2, y - h / 2, x + w / 2, y + h / 2 };
-	m_ButtonValue = Buttonvalue;
-	centerX = (float)x;
-	centerY = (float)y;
-	width = (float)w;
-	height = (float)h;
-
-	// Border
-	const float halfw = width / 2.0f;
-	const float halfh = height / 2.0f;
-	{
-		HRESULT hr = pD2DFactory->CreatePathGeometry(&Border.Geometry);
-		if (FAILED(hr)) return;
-
-		hr = Border.Geometry->Open(&Border.Sink);
-		if (FAILED(hr)) return;
-		Border.Sink->SetFillMode(D2D1_FILL_MODE_WINDING);
-		D2D1_POINT_2F p1 = { -halfw, -halfh };
-		D2D1_POINT_2F p2 = { halfw, -halfh };
-		D2D1_POINT_2F p3 = { halfw, halfh };
-		D2D1_POINT_2F p4 = { -halfw, halfh };
-		Border.Sink->BeginFigure(p1, D2D1_FIGURE_BEGIN_FILLED);
-		Border.Sink->AddLine(p2);
-		Border.Sink->AddLine(p3);
-		Border.Sink->AddLine(p4);
-		Border.Sink->EndFigure(D2D1_FIGURE_END_CLOSED);
-		hr = Border.Sink->Close();
-		if (FAILED(hr)) return;
-	}
-}
-
-void AppWindow::Button::InitGeometry(ID2D1Factory* pD2DFactory, float width, float height)
-{
-	const float halfw = width / 2.0f;
-	const float halfh = height / 2.0f;
-	// Shape Triangle
-	{
-		HRESULT hr = pD2DFactory->CreatePathGeometry(&Play.Geometry);
-		if (FAILED(hr)) return;
-
-		hr = Play.Geometry->Open(&Play.Sink);
-		if (FAILED(hr)) return;
-
-		Play.Sink->SetFillMode(D2D1_FILL_MODE_WINDING);
-		float radius = halfh * 0.75f;
-		float angle = 0.0f;
-		D2D1_POINT_2F p1 = { cos(angle) * radius, sin(angle) * radius };
-		angle = ThirdPI;
-		D2D1_POINT_2F p2 = { cos(angle) * radius, sin(angle) * radius };
-		angle = ThirdPI * 2.0f;
-		D2D1_POINT_2F p3 = { cos(angle) * radius, sin(angle) * radius };
-		Play.Sink->BeginFigure(p1, D2D1_FIGURE_BEGIN_FILLED);
-		Play.Sink->AddLine(p2);
-		Play.Sink->AddLine(p3);
-		Play.Sink->EndFigure(D2D1_FIGURE_END_CLOSED);
-		hr = Play.Sink->Close();
-		if (FAILED(hr)) return;
-	}
-	// Pause Button
-	{
-		HRESULT hr = pD2DFactory->CreatePathGeometry(&Pause.Geometry);
-		if (FAILED(hr)) return;
-
-		hr = Pause.Geometry->Open(&Pause.Sink);
-		if (FAILED(hr)) return;
-		Pause.Sink->SetFillMode(D2D1_FILL_MODE_WINDING);
-		float radius = height * 0.3f;
-		float width = radius * 0.26f;
-		float height = radius * 1.0f;
-		float spacing = radius * 0.5f;
-		D2D1_POINT_2F p1 = { -width - spacing, -height };
-		D2D1_POINT_2F p2 = { width - spacing, -height };
-		D2D1_POINT_2F p3 = { width - spacing, height };
-		D2D1_POINT_2F p4 = { -width - spacing, height };
-		Pause.Sink->BeginFigure(p1, D2D1_FIGURE_BEGIN_FILLED);
-		Pause.Sink->AddLine(p2);
-		Pause.Sink->AddLine(p3);
-		Pause.Sink->AddLine(p4);
-		Pause.Sink->EndFigure(D2D1_FIGURE_END_CLOSED);
-		p1 = { -width + spacing, -height };
-		p2 = { width + spacing, -height };
-		p3 = { width + spacing, height };
-		p4 = { -width + spacing, height };
-		Pause.Sink->BeginFigure(p1, D2D1_FIGURE_BEGIN_FILLED);
-		Pause.Sink->AddLine(p2);
-		Pause.Sink->AddLine(p3);
-		Pause.Sink->AddLine(p4);
-		Pause.Sink->EndFigure(D2D1_FIGURE_END_CLOSED);
-		hr = Pause.Sink->Close();
-		if (FAILED(hr)) return;
-	}
-	// Split Button
-	{
-		HRESULT hr = pD2DFactory->CreatePathGeometry(&Split.Geometry);
-		if (FAILED(hr)) return;
-
-		hr = Split.Geometry->Open(&Split.Sink);
-		if (FAILED(hr)) return;
-		Split.Sink->SetFillMode(D2D1_FILL_MODE_WINDING);
-		float radiusInner = 11;
-		float radiusOuter = 17;
-		float angle1 = 0.00001f;
-		float angle2 = 0.0f;
-		{
-			D2D1_POINT_2F p1 = { cos(angle1) * radiusInner, sin(angle1) * radiusInner };
-			D2D1_POINT_2F p2 = { cos(angle2) * radiusInner, sin(angle2) * radiusInner };
-			D2D1_POINT_2F p3 = { cos(angle2) * radiusOuter, sin(angle2) * radiusOuter };
-			D2D1_POINT_2F p4 = { cos(angle1) * radiusOuter, sin(angle1) * radiusOuter };
-
-			Split.Sink->BeginFigure(p1, D2D1_FIGURE_BEGIN_FILLED);
-			Split.Sink->AddArc(D2D1::ArcSegment(p2, D2D1::SizeF(radiusInner, radiusInner), 0.0f, D2D1_SWEEP_DIRECTION_CLOCKWISE, D2D1_ARC_SIZE_LARGE));
-			Split.Sink->AddLine(p3);
-			Split.Sink->AddArc(D2D1::ArcSegment(p4, D2D1::SizeF(radiusOuter, radiusOuter), 0.0f, D2D1_SWEEP_DIRECTION_COUNTER_CLOCKWISE, D2D1_ARC_SIZE_LARGE));
-			Split.Sink->EndFigure(D2D1_FIGURE_END_CLOSED);
-		}
-		{
-			float handwidth = 1.0f;
-			float handlength = 11.0f;
-			D2D1_POINT_2F p1 = { -handwidth, 0 };
-			D2D1_POINT_2F p2 = { -handwidth, -handlength };
-			D2D1_POINT_2F p3 = { handwidth, -handlength };
-			D2D1_POINT_2F p4 = { handwidth, 0 };
-
-			Split.Sink->BeginFigure(p1, D2D1_FIGURE_BEGIN_FILLED);
-			Split.Sink->AddLine(p2);
-			Split.Sink->AddLine(p3);
-			Split.Sink->AddLine(p4);
-			Split.Sink->EndFigure(D2D1_FIGURE_END_CLOSED);
-		}
-		{
-			float handwidth = 1.0f;
-			float handlength = 8.0f;
-			D2D1_POINT_2F p1 = { 0, -handwidth };
-			D2D1_POINT_2F p2 = { handlength, -handwidth };
-			D2D1_POINT_2F p3 = { handlength, handwidth };
-			D2D1_POINT_2F p4 = { 0, handwidth };
-
-			Split.Sink->BeginFigure(p1, D2D1_FIGURE_BEGIN_FILLED);
-			Split.Sink->AddLine(p2);
-			Split.Sink->AddLine(p3);
-			Split.Sink->AddLine(p4);
-			Split.Sink->EndFigure(D2D1_FIGURE_END_CLOSED);
-		}
-		hr = Split.Sink->Close();
-		if (FAILED(hr)) return;
-	}
-	// Reset Button
-	{
-		HRESULT hr = pD2DFactory->CreatePathGeometry(&Reset.Geometry);
-		if (FAILED(hr)) return;
-
-		hr = Reset.Geometry->Open(&Reset.Sink);
-		if (FAILED(hr)) return;
-		Reset.Sink->SetFillMode(D2D1_FILL_MODE_WINDING);
-		float radiusInner = 6;
-		float radiusOuter = 9;
-		float midradius = (radiusOuter - radiusInner) * 0.5f + radiusInner;
-		float arrowwidth = 4.0f;
-		float anglearrow = 0.5f;
-		float angle1 = -2.35f;
-		float angle2 = 3.2f;
-		D2D1_POINT_2F p1 = { cos(angle1) * radiusInner, sin(angle1) * radiusInner };
-		D2D1_POINT_2F p2 = { cos(angle2) * radiusInner, sin(angle2) * radiusInner };
-		D2D1_POINT_2F p3 = { cos(angle2) * radiusOuter, sin(angle2) * radiusOuter };
-		D2D1_POINT_2F p4 = { cos(angle1) * radiusOuter, sin(angle1) * radiusOuter };
-		D2D1_POINT_2F p5 = { cos(angle1) * (midradius - arrowwidth), sin(angle1) * (midradius - arrowwidth) };
-		D2D1_POINT_2F p6 = { cos(angle1 - anglearrow) * midradius, sin(angle1 - anglearrow) * midradius };
-		D2D1_POINT_2F p7 = { cos(angle1) * (midradius + arrowwidth), sin(angle1) * (midradius + arrowwidth) };
-		Reset.Sink->BeginFigure(p1, D2D1_FIGURE_BEGIN_FILLED);
-		Reset.Sink->AddArc(D2D1::ArcSegment(p2, D2D1::SizeF(radiusInner, radiusInner), 0.0f, D2D1_SWEEP_DIRECTION_CLOCKWISE, D2D1_ARC_SIZE_LARGE));
-		Reset.Sink->AddLine(p3);
-		Reset.Sink->AddArc(D2D1::ArcSegment(p4, D2D1::SizeF(radiusOuter, radiusOuter), 0.0f, D2D1_SWEEP_DIRECTION_COUNTER_CLOCKWISE, D2D1_ARC_SIZE_LARGE));
-		Reset.Sink->AddLine(p5);
-		Reset.Sink->AddLine(p6);
-		Reset.Sink->AddLine(p7);
-		Reset.Sink->EndFigure(D2D1_FIGURE_END_CLOSED);
-		hr = Reset.Sink->Close();
-		if (FAILED(hr)) return;
-	}
-	// Increment Button
-	{
-		HRESULT hr = pD2DFactory->CreatePathGeometry(&Increment.Geometry);
-		if (FAILED(hr)) return;
-
-		hr = Increment.Geometry->Open(&Increment.Sink);
-		if (FAILED(hr)) return;
-		Increment.Sink->SetFillMode(D2D1_FILL_MODE_WINDING);
-		float width = 10.0f;
-		float height = 8.0f;
-		D2D1_POINT_2F p1 = { -width, height };
-		D2D1_POINT_2F p2 = { 0.0f, -height };
-		D2D1_POINT_2F p3 = { width, height };
-		Increment.Sink->BeginFigure(p1, D2D1_FIGURE_BEGIN_FILLED);
-		Increment.Sink->AddLine(p2);
-		Increment.Sink->AddLine(p3);
-		Increment.Sink->EndFigure(D2D1_FIGURE_END_CLOSED);
-
-		hr = Increment.Sink->Close();
-		if (FAILED(hr)) return;
-	}
-	// Decrement Button
-	{
-		HRESULT hr = pD2DFactory->CreatePathGeometry(&Decrement.Geometry);
-		if (FAILED(hr)) return;
-
-		hr = Decrement.Geometry->Open(&Decrement.Sink);
-		if (FAILED(hr)) return;
-		Decrement.Sink->SetFillMode(D2D1_FILL_MODE_WINDING);
-		float width = 10.0f;
-		float height = 8.0f;
-		D2D1_POINT_2F p1 = { -width, -height };
-		D2D1_POINT_2F p2 = { 0.0f, height };
-		D2D1_POINT_2F p3 = { width, -height };
-		Decrement.Sink->BeginFigure(p1, D2D1_FIGURE_BEGIN_FILLED);
-		Decrement.Sink->AddLine(p2);
-		Decrement.Sink->AddLine(p3);
-		Decrement.Sink->EndFigure(D2D1_FIGURE_END_CLOSED);
-
-		hr = Decrement.Sink->Close();
-		if (FAILED(hr)) return;
-	}
-	// Add Button
-	{
-		HRESULT hr = pD2DFactory->CreatePathGeometry(&Add.Geometry);
-		if (FAILED(hr)) return;
-
-		hr = Add.Geometry->Open(&Add.Sink);
-		if (FAILED(hr)) return;
-		Add.Sink->SetFillMode(D2D1_FILL_MODE_WINDING);
-		float lgLength = 15.0f;
-		float smLength = 4.0f;
-		D2D1_POINT_2F p1 = { -lgLength, -smLength };
-		D2D1_POINT_2F p2 = { -smLength, -smLength };
-		D2D1_POINT_2F p3 = { -smLength, -lgLength };
-		D2D1_POINT_2F p4 = { smLength, -lgLength };
-
-		D2D1_POINT_2F p5 = { smLength, -smLength };
-		D2D1_POINT_2F p6 = { lgLength, -smLength };
-		D2D1_POINT_2F p7 = { lgLength, smLength };
-		D2D1_POINT_2F p8 = { smLength, smLength };
-
-		D2D1_POINT_2F p9 = { smLength, lgLength };
-		D2D1_POINT_2F p10 = { -smLength, lgLength };
-		D2D1_POINT_2F p11 = { -smLength, smLength };
-		D2D1_POINT_2F p12 = { -lgLength, smLength };
-
-		Add.Sink->BeginFigure(p1, D2D1_FIGURE_BEGIN_FILLED);
-		Add.Sink->AddLine(p2);
-		Add.Sink->AddLine(p3);
-		Add.Sink->AddLine(p4);
-		Add.Sink->AddLine(p5);
-		Add.Sink->AddLine(p6);
-		Add.Sink->AddLine(p7);
-		Add.Sink->AddLine(p8);
-		Add.Sink->AddLine(p9);
-		Add.Sink->AddLine(p10);
-		Add.Sink->AddLine(p11);
-		Add.Sink->AddLine(p12);
-		Add.Sink->EndFigure(D2D1_FIGURE_END_CLOSED);
-
-		hr = Add.Sink->Close();
-		if (FAILED(hr)) return;
-	}
-	// Minus Button
-	{
-		HRESULT hr = pD2DFactory->CreatePathGeometry(&Sub.Geometry);
-		if (FAILED(hr)) return;
-
-		hr = Sub.Geometry->Open(&Sub.Sink);
-		if (FAILED(hr)) return;
-		Sub.Sink->SetFillMode(D2D1_FILL_MODE_WINDING);
-		float lgLength = 15.0f;
-		float smLength = 4.0f;
-		D2D1_POINT_2F p1 = { -lgLength, -smLength };
-		D2D1_POINT_2F p2 = { lgLength, -smLength };
-		D2D1_POINT_2F p3 = { lgLength, smLength };
-		D2D1_POINT_2F p4 = { -lgLength, smLength };
-
-		Sub.Sink->BeginFigure(p1, D2D1_FIGURE_BEGIN_FILLED);
-		Sub.Sink->AddLine(p2);
-		Sub.Sink->AddLine(p3);
-		Sub.Sink->AddLine(p4);
-		Sub.Sink->EndFigure(D2D1_FIGURE_END_CLOSED);
-
-		hr = Sub.Sink->Close();
-		if (FAILED(hr)) return;
-	}
-}
-
-void AppWindow::Button::Draw(ID2D1HwndRenderTarget* pRenderTarget, BOOL timing, BOOL negative, int hover, int grab)
-{
-	float scale = (m_ButtonValue == hover) ? 1.2f : 1.0f;
-	D2D1::Matrix3x2F scalematrix = D2D1::Matrix3x2F::Scale(scale, scale);
-	D2D1::Matrix3x2F translationmatrix = D2D1::Matrix3x2F::Translation(centerX, centerY);
-	pRenderTarget->SetTransform(translationmatrix);
-	pRenderTarget->FillGeometry(Border.Geometry, (m_ButtonValue == grab) ? pPressedBrush : ((m_ButtonValue == hover) ? pHoverBrush : pFillBrush));
-	pRenderTarget->DrawGeometry(Border.Geometry, pOutlineBrush);
-	pRenderTarget->SetTransform(scalematrix * translationmatrix);
-	switch (m_ButtonValue)
-	{
-	case BUTTON_START:
-		pRenderTarget->FillGeometry(timing ? Pause.Geometry : Play.Geometry, pShapeBrush);
-		break;
-	case BUTTON_SPLIT:
-		pRenderTarget->FillGeometry(Split.Geometry, pShapeBrush);
-		break;
-	case BUTTON_RESET:
-		pRenderTarget->FillGeometry(Reset.Geometry, pShapeBrush);
-		break;
-	case BUTTON_ADDTIME:
-		pRenderTarget->FillGeometry(negative ? Sub.Geometry : Add.Geometry, pShapeBrush);
-		break;
-	case BUTTON_INCTIME:
-		pRenderTarget->FillGeometry(Increment.Geometry, pShapeBrush);
-		break;
-	case BUTTON_DECTIME:
-		pRenderTarget->FillGeometry(Decrement.Geometry, pShapeBrush);
-		break;
-	case BUTTON_ZERO:
-		pRenderTarget->FillGeometry(Reset.Geometry, pShapeBrush);
-		break;
-	case BUTTON_TIMEOFDAYINC:
-		pRenderTarget->FillGeometry(Increment.Geometry, pShapeBrush);
-		break;
-	case BUTTON_TIMEOFDAYDEC:
-		pRenderTarget->FillGeometry(Decrement.Geometry, pShapeBrush);
-		break;
-	}
-}
-
-int AppWindow::Button::HitTest(int x, int y)
-{
-	if (x > HitTestRect.left && x < HitTestRect.right && y > HitTestRect.top && y < HitTestRect.bottom)
-		return m_ButtonValue;
-	else
-		return -1;
-}
-
-void AppWindow::Button::DiscardButtonGraphicsResources()
-{
-	SafeRelease(&pOutlineBrush);
-	SafeRelease(&pFillBrush);
-	SafeRelease(&pHoverBrush);
-	SafeRelease(&pPressedBrush);
-	SafeRelease(&pShapeBrush);
-}
-
-HRESULT AppWindow::Button::CreateButtonGraphicsResources(ID2D1HwndRenderTarget* pRenderTarget)
-{
-	HRESULT hr = S_OK;
-	D2D1::ColorF color = D2D1::ColorF(0.3f, 0.3f, 0.3f, 1.0f);
-	if (pOutlineBrush == nullptr)
-		hr = pRenderTarget->CreateSolidColorBrush(color, &pOutlineBrush);
-	if (FAILED(hr))
-		return hr;
-
-	color = D2D1::ColorF(0.8f, 0.8f, 0.8f, 1.0f);
-	if (pFillBrush == nullptr)
-		hr = pRenderTarget->CreateSolidColorBrush(color, &pFillBrush);
-	if (FAILED(hr))
-		return hr;
-
-	color = D2D1::ColorF(0.9f, 0.9f, 0.9f, 1.0f);
-	if (pHoverBrush == nullptr)
-		hr = pRenderTarget->CreateSolidColorBrush(color, &pHoverBrush);
-	if (FAILED(hr))
-		return hr;
-
-	color = D2D1::ColorF(0.7f, 0.7f, 0.7f, 1.0f);
-	if (pPressedBrush == nullptr)
-		hr = pRenderTarget->CreateSolidColorBrush(color, &pPressedBrush);
-	if (FAILED(hr))
-		return hr;
-
-	color = D2D1::ColorF(0.35f, 0.35f, 0.35f, 1.0f);
-	if (pShapeBrush == nullptr)
-		hr = pRenderTarget->CreateSolidColorBrush(color, &pShapeBrush);
-	if (FAILED(hr))
-		return hr;
-
-	return hr;
-}
+#include "ComException.h"
 
 
 void AppWindow::Init(HINSTANCE hInstance, Application* app)
@@ -403,8 +13,44 @@ void AppWindow::Init(HINSTANCE hInstance, Application* app)
 	m_App = app;
 	timeofdayincrement = 1.0f / 192.0f * PI2;
 	RegisterWindowClass(hInstance);
-	m_Direct2DDevice.InitializeFactory();
-	m_DigitalClock.Init(m_Direct2DDevice.getD2DFactory());
+}
+
+BOOL AppWindow::Create(Timer* timer, int width, int height)
+{
+	m_pTimer = timer;
+	const DWORD style = WS_OVERLAPPEDWINDOW ^ WS_THICKFRAME ^ WS_MAXIMIZEBOX; // WS_OVERLAPPEDWINDOW ^ WS_THICKFRAME ^ WS_MAXIMIZEBOX     WS_POPUP
+	const DWORD exstyle = WS_EX_NOREDIRECTIONBITMAP;
+
+	RECT winRect = { 0, 0, width, height };
+	AdjustWindowRectEx(&winRect, style, false, exstyle);
+
+	hWindow = CreateWindowExW(
+		exstyle,
+		m_WindowClass,
+		m_Title,
+		style,
+		CW_USEDEFAULT, 0,
+		winRect.right - winRect.left,
+		winRect.bottom - winRect.top,
+		nullptr,
+		nullptr,
+		hInst,
+		this);
+
+	if (!hWindow)
+		return FALSE;
+
+	ShowWindow(hWindow, SW_SHOW);
+	UpdateWindow(hWindow);
+
+	m_pTimer->SetAppWindow(hWindow);
+
+	return TRUE;
+}
+
+void AppWindow::CreateGraphicsResources()
+{
+	m_DigitalClock.Init(m_Renderer.GetFactory());
 
 	const int startbuttonwidth = 100;
 	const int buttonwidth = 50;
@@ -431,90 +77,91 @@ void AppWindow::Init(HINSTANCE hInstance, Application* app)
 	int sunincx = 300;
 	int sundecx = 350;
 
-	AppWindow::Button::InitGeometry(m_Direct2DDevice.getD2DFactory(), buttonwidth, buttonheight);
-	m_ClockFace.InitGeometry(m_Direct2DDevice.getD2DFactory(), 12.0);
-	m_Buttons[0].Init(m_Direct2DDevice.getD2DFactory(), BUTTON_START, playX, row1, startbuttonwidth, buttonheight);
-	m_Buttons[1].Init(m_Direct2DDevice.getD2DFactory(), BUTTON_SPLIT, splitX, row1, buttonwidth, buttonheight);
+	AppWindow::Button::InitGeometry(m_Renderer.GetFactory(), buttonwidth, buttonheight);
+	m_ClockFace.InitGeometry(m_Renderer.GetFactory(), 12.0);
+	m_Buttons[0].Init(m_Renderer.GetFactory(), BUTTON_START, playX, row1, startbuttonwidth, buttonheight);
+	m_Buttons[1].Init(m_Renderer.GetFactory(), BUTTON_SPLIT, splitX, row1, buttonwidth, buttonheight);
 
-	m_Buttons[2].Init(m_Direct2DDevice.getD2DFactory(), BUTTON_RESET, resetx, resety, smwidth, smheight);
+	m_Buttons[2].Init(m_Renderer.GetFactory(), BUTTON_RESET, resetx, resety, smwidth, smheight);
 
-	m_Buttons[3].Init(m_Direct2DDevice.getD2DFactory(), BUTTON_ADDTIME, addx, row2, buttonwidth, buttonheight);
-	m_Buttons[4].Init(m_Direct2DDevice.getD2DFactory(), BUTTON_INCTIME, incx, row2, buttonwidth, buttonheight);
-	m_Buttons[5].Init(m_Direct2DDevice.getD2DFactory(), BUTTON_DECTIME, decx, row2, buttonwidth, buttonheight);
-	m_Buttons[6].Init(m_Direct2DDevice.getD2DFactory(), BUTTON_ZERO, zerox, zeroy, smwidth, smheight);
+	m_Buttons[3].Init(m_Renderer.GetFactory(), BUTTON_ADDTIME, addx, row2, buttonwidth, buttonheight);
+	m_Buttons[4].Init(m_Renderer.GetFactory(), BUTTON_INCTIME, incx, row2, buttonwidth, buttonheight);
+	m_Buttons[5].Init(m_Renderer.GetFactory(), BUTTON_DECTIME, decx, row2, buttonwidth, buttonheight);
+	m_Buttons[6].Init(m_Renderer.GetFactory(), BUTTON_ZERO, zerox, zeroy, smwidth, smheight);
 
-	m_Buttons[7].Init(m_Direct2DDevice.getD2DFactory(), BUTTON_TIMEOFDAYINC, sunincx, row2, buttonwidth, buttonheight);
-	m_Buttons[8].Init(m_Direct2DDevice.getD2DFactory(), BUTTON_TIMEOFDAYDEC, sundecx, row2, buttonwidth, buttonheight);
+	m_Buttons[7].Init(m_Renderer.GetFactory(), BUTTON_TIMEOFDAYINC, sunincx, row2, buttonwidth, buttonheight);
+	m_Buttons[8].Init(m_Renderer.GetFactory(), BUTTON_TIMEOFDAYDEC, sundecx, row2, buttonwidth, buttonheight);
+
+
+
+	ID2D1DeviceContext* dc = m_Renderer.GetDeviceContext();
+	m_DigitalClock.CreateGraphicsResources(dc);
+	m_ClockFace.CreateGraphicsResources(dc);
+	AppWindow::Button::CreateButtonGraphicsResources(dc);
 }
 
-AppWindow::~AppWindow()
+//void AppWindow::DiscardGraphicsResources()
+//{
+//	m_Direct2DDevice.ReleaseGraphicsResources();
+//	m_ClockFace.DiscardGraphicsResources();
+//	//AppWindow::Button::DiscardButtonGraphicsResources();
+//}
+
+void AppWindow::Paint2()
 {
-	DiscardGraphicsResources();
-}
+	static INT64 previousAlarmms = 0;
+	static INT64 previousHours = 0;
+	// Update minuteHandAngle to match clock
+	if (!GrabLock)
+	{
+		minuteHandangle = getMinuteAngleRad(m_pTimer->GetAlarmTime());
+	}
 
-BOOL AppWindow::Create(Timer* timer, int width, int height)
-{
-	m_pTimer = timer;
-	const DWORD style = WS_OVERLAPPEDWINDOW ^ WS_THICKFRAME ^ WS_MAXIMIZEBOX; // WS_OVERLAPPEDWINDOW ^ WS_THICKFRAME ^ WS_MAXIMIZEBOX     WS_POPUP
-	const DWORD exstyle = 0;
+	ID2D1DeviceContext* dc = m_Renderer.GetDeviceContext();
+	dc->BeginDraw();
+	dc->Clear();
 
-	RECT winRect = { 0, 0, width, height };
-	AdjustWindowRectEx(&winRect, style, false, exstyle);
+	dc->SetTransform(D2D1::Matrix3x2F::Identity());
+	for (int i = 0; i < ButtonCount; i++)
+	{
+		m_Buttons[i].Draw(dc, m_pTimer->isStarted(), (GrabbedElementRMB == BUTTON_ADDTIME), HoverElement, GrabbedElementLMB);
+	}
 
-	hWindow = CreateWindowExW(
-		exstyle,
-		m_WindowClass,
-		m_Title,
-		style,
-		CW_USEDEFAULT, 0,
-		winRect.right - winRect.left,
-		winRect.bottom - winRect.top,
-		nullptr,
-		nullptr,
-		hInst,
-		nullptr);
 
-	if (!hWindow)
-		return FALSE;
+	INT64 ms = m_pTimer->GetMilliseconds();
+	INT64 absms = abs(ms);
+	INT64 splitms = m_pTimer->GetSplitMilliseconds();
 
-	SetWindowLongPtrW(hWindow, GWLP_USERDATA, (INT64)this);
+	INT64 alarmms = m_pTimer->GetAlarmTime();
+	if (alarmms == 0 && previousAlarmms > 0 && !GrabLock && !Reseting)
+	{
+		m_App->m_SoundManager.Play(m_App->Alarm, 1.0f, 1.0f);
+	}
+	previousAlarmms = alarmms;
+	{
+		INT64 hours = GetHours(absms);
+		if (hours > previousHours && !Adding)
+			m_App->m_SoundManager.Play(m_App->Bwoop, 1.0f, 1.0f);
+		previousHours = hours;
+	}
 
-	ShowWindow(hWindow, SW_SHOW);
-	UpdateWindow(hWindow);
+	m_ClockFace.DrawSunMoon(dc, getDayAngleRad(splitms) + timeofDayOffset);
 
-	m_pTimer->SetAppWindow(hWindow);
+	m_ClockFace.DrawBackGround(dc);
 
-	return TRUE;
-}
+	m_ClockFace.DrawHands(dc, minuteHandangle * Rad2DegFactor - 90, getHourAngleDeg(alarmms));
 
-HRESULT AppWindow::CreateGraphicsResources()
-{
-	HRESULT hr = S_OK;
+	m_DigitalClock.Draw(dc, m_TransformMain, (ms < 0), (absms && (HoverElement == BUTTON_RESET || HoverElement == BUTTON_SPLIT)), TRUE, GetDays(absms), GetHours(absms), GetMinutes(absms), GetTenths(absms));
+	m_DigitalClock.Draw(dc, m_TransformSub, FALSE, (splitms && (HoverElement == BUTTON_RESET)), TRUE, GetDays(splitms), GetHours(splitms), GetMinutes(splitms), GetTenths(splitms));
+	INT64 absTime = abs(AddTime);
+	m_DigitalClock.Draw(dc, m_TransformAddtime, FALSE, (AddTime && (HoverElement == BUTTON_ZERO)), FALSE, GetDays(absTime), GetHours(absTime), GetMinutes(absTime), GetTenths(absTime));
+	if (alarmms)
+		m_DigitalClock.Draw(dc, m_TransformAlarm, FALSE, FALSE, TRUE, GetDays(alarmms), GetHours(alarmms), GetMinutes(alarmms), GetTenths(alarmms));
 
-	hr = m_Direct2DDevice.CreateRenderTargetHwnd(hWindow);
-	if (FAILED(hr))
-		return hr;
-	ID2D1HwndRenderTarget* pRenderTarget = m_Direct2DDevice.getD2DRenderTarget();
-	hr = m_DigitalClock.CreateGraphicsResources(pRenderTarget);
-	if (FAILED(hr))
-		return hr;
-	hr = m_ClockFace.CreateGraphicsResources(pRenderTarget);
-	if (FAILED(hr))
-		return hr;
 
-	hr = AppWindow::Button::CreateButtonGraphicsResources(pRenderTarget);
-	if (FAILED(hr))
-		return hr;
 
-	return hr;
-}
-
-void AppWindow::DiscardGraphicsResources()
-{
-	m_Direct2DDevice.ReleaseGraphicsResources();
-	m_DigitalClock.DiscardGraphicsResources();
-	m_ClockFace.DiscardGraphicsResources();
-	AppWindow::Button::DiscardButtonGraphicsResources();
+	HR(dc->EndDraw());
+	HR(m_Renderer.GetSwapChain()->Present(1, 0));
 }
 
 void AppWindow::Paint()
@@ -526,7 +173,7 @@ void AppWindow::Paint()
 	{
 		minuteHandangle = getMinuteAngleRad(m_pTimer->GetAlarmTime());
 	}
-
+	/*
 	HRESULT hr = CreateGraphicsResources();
 	if (SUCCEEDED(hr))
 	{
@@ -538,11 +185,11 @@ void AppWindow::Paint()
 		pRenderTarget->Clear(D2D1::ColorF(D2D1::ColorF::WhiteSmoke));
 
 
-		pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
-		for (int i = 0; i < ButtonCount; i++)
-		{
-			m_Buttons[i].Draw(pRenderTarget, m_pTimer->isStarted(), (GrabbedElementRMB == BUTTON_ADDTIME), HoverElement, GrabbedElementLMB);
-		}
+		//pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
+		//for (int i = 0; i < ButtonCount; i++)
+		//{
+		//	m_Buttons[i].Draw(pRenderTarget, m_pTimer->isStarted(), (GrabbedElementRMB == BUTTON_ADDTIME), HoverElement, GrabbedElementLMB);
+		//}
 
 		INT64 ms = m_pTimer->GetMilliseconds();
 		INT64 absms = abs(ms);
@@ -583,6 +230,7 @@ void AppWindow::Paint()
 		Reseting = FALSE;
 		Adding = FALSE;
 	}
+	*/
 }
 
 ATOM AppWindow::RegisterWindowClass(HINSTANCE hInstance)
@@ -714,10 +362,23 @@ void AppWindow::MouseAdjustAlarm(int mousex, int mousey)
 
 LRESULT CALLBACK AppWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	AppWindow* window = reinterpret_cast<AppWindow*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+	static AppWindow* window = nullptr;
 	if (window)
 		return window->ClassWndProc(hWnd, message, wParam, lParam);
-	return DefWindowProc(hWnd, message, wParam, lParam);
+	else
+	{
+		if (message == WM_CREATE)
+		{
+			window = reinterpret_cast<AppWindow*>(((CREATESTRUCTW*)lParam)->lpCreateParams);
+			window->m_Renderer.Init(hWnd);
+			window->CreateGraphicsResources();
+			return 0;
+		}
+		else
+		{
+			return DefWindowProc(hWnd, message, wParam, lParam);
+		}
+	}
 }
 
 LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -727,8 +388,7 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 	{
 	case WM_PAINT:
 	{
-		Paint();
-		return 0;
+		Paint2();
 	}
 	break;
 	case WM_KILLFOCUS:

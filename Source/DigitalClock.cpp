@@ -2,19 +2,13 @@
 #include "DigitalClock.h"
 #include "Direct2D.h"
 #include "Math.h"
+#include "ComException.h"
 
-DigitalClock::~DigitalClock()
+void DigitalClock::SevenSegment::Segment::Init(ID2D1Factory2* pD2DFactory, BOOL vertical, float longdist, float shortdist, float halfwidth, float sk, D2D1_POINT_2F offset)
 {
-	DiscardGraphicsResources();
-}
+	HR(pD2DFactory->CreatePathGeometry(Geometry.ReleaseAndGetAddressOf()));
 
-void DigitalClock::SevenSegment::Segment::Init(ID2D1Factory* pD2DFactory, BOOL vertical, float longdist, float shortdist, float halfwidth, float sk, D2D1_POINT_2F offset)
-{
-	HRESULT hr = pD2DFactory->CreatePathGeometry(&Geometry);
-	if (FAILED(hr)) return;
-
-	hr = Geometry->Open(&Sink);
-	if (FAILED(hr)) return;
+	HR(Geometry->Open(Sink.ReleaseAndGetAddressOf()));
 
 	Sink->SetFillMode(D2D1_FILL_MODE_WINDING);
 	D2D1_POINT_2F p1 = { -longdist, 0 };
@@ -32,7 +26,6 @@ void DigitalClock::SevenSegment::Segment::Init(ID2D1Factory* pD2DFactory, BOOL v
 		p5 = { halfwidth, shortdist };
 		p6 = { halfwidth , -shortdist };
 	}
-	//float sk = -0.1f;
 	Sink->BeginFigure(skew(p1 + offset, sk), D2D1_FIGURE_BEGIN_FILLED);
 	Sink->AddLine(skew(p2 + offset, sk));
 	Sink->AddLine(skew(p3 + offset, sk));
@@ -40,21 +33,15 @@ void DigitalClock::SevenSegment::Segment::Init(ID2D1Factory* pD2DFactory, BOOL v
 	Sink->AddLine(skew(p5 + offset, sk));
 	Sink->AddLine(skew(p6 + offset, sk));
 	Sink->EndFigure(D2D1_FIGURE_END_CLOSED);
-	hr = Sink->Close();
+	HR(Sink->Close());
 }
 
-DigitalClock::SevenSegment::Segment::~Segment()
+void DigitalClock::SevenSegment::Segment::DrawSegment(ID2D1DeviceContext* pRenderTarget, ID2D1SolidColorBrush* pBrush)
 {
-	SafeRelease(&Geometry);
-	SafeRelease(&Sink);
+	pRenderTarget->FillGeometry(Geometry.Get(), pBrush);
 }
 
-void DigitalClock::SevenSegment::Segment::DrawSegment(ID2D1HwndRenderTarget* pRenderTarget, ID2D1SolidColorBrush* pBrush)
-{
-	pRenderTarget->FillGeometry(Geometry, pBrush);
-}
-
-void DigitalClock::SevenSegment::InitGeometry(ID2D1Factory* pD2DFactory)
+void DigitalClock::SevenSegment::InitGeometry(ID2D1Factory2* pD2DFactory)
 {
 	const float longdist = 31.0f;
 	const float shortdist = 19.0f;
@@ -91,31 +78,16 @@ void DigitalClock::SevenSegment::InitGeometry(ID2D1Factory* pD2DFactory)
 	Seg[6].Init(pD2DFactory, FALSE, longdist, shortdist, halfwidth, sk, offset);
 }
 
-HRESULT DigitalClock::CreateGraphicsResources(ID2D1HwndRenderTarget* pRenderTarget)
+void DigitalClock::CreateGraphicsResources(ID2D1DeviceContext* pRenderTarget)
 {
-	HRESULT hr = S_OK;
 	D2D1::ColorF color = D2D1::ColorF(0.02f, 0.02f, 0.02f, 1.0f);
-	if (pNormalBrush == nullptr)
-		hr = pRenderTarget->CreateSolidColorBrush(color, &pNormalBrush);
-	if (FAILED(hr))
-		return hr;
+	HR(pRenderTarget->CreateSolidColorBrush(color, pNormalBrush.ReleaseAndGetAddressOf()));
 
 	color = D2D1::ColorF(0.8f, 0.04f, 0.04f, 1.0f);
-	if (pHighlightBrush == nullptr)
-		hr = pRenderTarget->CreateSolidColorBrush(color, &pHighlightBrush);
-	if (FAILED(hr))
-		return hr;
-
-	return hr;
+	HR(pRenderTarget->CreateSolidColorBrush(color, pHighlightBrush.ReleaseAndGetAddressOf()));
 }
 
-void DigitalClock::DiscardGraphicsResources()
-{
-	SafeRelease(&pNormalBrush);
-	SafeRelease(&pHighlightBrush);
-}
-
-void DigitalClock::SevenSegment::Draw(ID2D1HwndRenderTarget* pRenderTarget, int value, ID2D1SolidColorBrush* pFullBrush)
+void DigitalClock::SevenSegment::Draw(ID2D1DeviceContext* pRenderTarget, int value, ID2D1SolidColorBrush* pFullBrush)
 {
 	switch (value)
 	{
@@ -200,20 +172,20 @@ void DigitalClock::SevenSegment::Draw(ID2D1HwndRenderTarget* pRenderTarget, int 
 	}
 }
 
-void DigitalClock::Init(ID2D1Factory* pD2DFactory)
+void DigitalClock::Init(ID2D1Factory2* pD2DFactory)
 {
 	m_SevenSegment.InitGeometry(pD2DFactory);
 }
 
-void DigitalClock::Draw(ID2D1HwndRenderTarget* pRenderTarget, D2D1::Matrix3x2F transform, BOOL negative, BOOL Highlighted, BOOL bTenths, INT64 days, INT64 hours, INT64 mins, INT64 tenths)
+void DigitalClock::Draw(ID2D1DeviceContext* pRenderTarget, D2D1::Matrix3x2F transform, BOOL negative, BOOL Highlighted, BOOL bTenths, INT64 days, INT64 hours, INT64 mins, INT64 tenths)
 {
 	const float DigitSpacing = 100.0f;
 	const float DotSpacing = 40.0f;
 	float spacing = 0.0f;
 	D2D1::Matrix3x2F DigitTransform = D2D1::Matrix3x2F::Identity();
-	ID2D1SolidColorBrush* pBrush = pNormalBrush;
+	ID2D1SolidColorBrush* pBrush = pNormalBrush.Get();
 	if (Highlighted)
-		pBrush = pHighlightBrush;
+		pBrush = pHighlightBrush.Get();
 
 	if (negative)
 	{
@@ -315,13 +287,13 @@ void DigitalClock::Draw(ID2D1HwndRenderTarget* pRenderTarget, D2D1::Matrix3x2F t
 	}
 }
 
-void DigitalClock::DrawDot(ID2D1HwndRenderTarget* pRenderTarget, ID2D1SolidColorBrush* Brush)
+void DigitalClock::DrawDot(ID2D1DeviceContext* pRenderTarget, ID2D1SolidColorBrush* Brush)
 {
 	D2D1_ELLIPSE ellipse = { { 70 + -0.2f * 70,  70 }, 10, 10 };
 	pRenderTarget->FillEllipse(ellipse, Brush);
 }
 
-void DigitalClock::DrawColon(ID2D1HwndRenderTarget* pRenderTarget, ID2D1SolidColorBrush* Brush)
+void DigitalClock::DrawColon(ID2D1DeviceContext* pRenderTarget, ID2D1SolidColorBrush* Brush)
 {
 	D2D1_ELLIPSE ellipse = { { 70 + -0.2f * 40,  40 }, 10, 10 };
 	pRenderTarget->FillEllipse(ellipse, Brush);

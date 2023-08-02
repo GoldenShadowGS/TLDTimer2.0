@@ -105,11 +105,6 @@ void Timer::Timerproc(HWND hWnd, UINT Param2, UINT_PTR Param3, DWORD Param4)
 	{
 		ReDraw(window);
 	}
-	window = m_Timer->TimerWindow;
-	if (window)
-	{
-		ReDraw(window);
-	}
 }
 
 void Timer::ReDraw(HWND hwnd)

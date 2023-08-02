@@ -61,7 +61,6 @@ public:
 	BOOL isStarted() { return m_bStarted; }
 	INT64 GetMilliseconds();
 	void SetAppWindow(HWND hwnd) { AppWindow = hwnd; }
-	void SetTimerWindow(HWND hwnd) { TimerWindow = hwnd; }
 	void Split();
 	INT64 GetSplitMilliseconds();
 	void AddTime(INT64 time);
@@ -69,7 +68,6 @@ public:
 	INT64 GetAlarmTime();
 private:
 	HWND AppWindow = nullptr;
-	HWND TimerWindow = nullptr;
 	static inline Timer* m_Timer = nullptr;
 	static void Timerproc(HWND hWnd, UINT Param2, UINT_PTR Param3, DWORD Param4);
 	static void ReDraw(HWND hwnd);

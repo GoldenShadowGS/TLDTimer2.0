@@ -4,6 +4,7 @@
 #include "Resource.h"
 #include "ResourceLoader.h"
 #include "Direct2D.h"
+#include "ComException.h"
 
 std::vector<BYTE> FlipImage(std::vector<BYTE>& Image, int pitch, int height)
 {
@@ -19,17 +20,17 @@ std::vector<BYTE> FlipImage(std::vector<BYTE>& Image, int pitch, int height)
 	return FlippedPixels;
 }
 
-Bitmap::~Bitmap()
-{
-	DiscardGraphicsResources();
-}
+//Bitmap::~Bitmap()
+//{
+//	DiscardGraphicsResources();
+//}
 
-void Bitmap::DiscardGraphicsResources()
-{
-	SafeRelease(&pBitmap);
-}
+//void Bitmap::DiscardGraphicsResources()
+//{
+//	SafeRelease(&pBitmap);
+//}
 
-HRESULT Bitmap::CreateGraphicsResources(ID2D1HwndRenderTarget* rt, int resource, BYTE r, BYTE g, BYTE b, float pivotx, float pivoty, float scale)
+HRESULT Bitmap::CreateGraphicsResources(ID2D1DeviceContext* rt, int resource, BYTE r, BYTE g, BYTE b, float pivotx, float pivoty, float scale)
 {
 	HRESULT hr = S_OK;
 	if (pBitmap == nullptr)
@@ -65,20 +66,22 @@ HRESULT Bitmap::CreateGraphicsResources(ID2D1HwndRenderTarget* rt, int resource,
 		//Rescale
 		if (scale != 1.0f)
 		{
-			ID2D1Bitmap* pScaledBitmap = nullptr;
+			ComPtr<ID2D1Bitmap> pScaledBitmap = nullptr;
 			D2D1_SIZE_F scaledsize = { bitmapsize.width * scale, bitmapsize.height * scale };
 			hr = rt->CreateCompatibleRenderTarget(scaledsize, &pBitmapRenderTarget);
 
 			pBitmapRenderTarget->BeginDraw();
 
 			D2D1_RECT_F BitmapRect = { 0.0f, 0.0f, scaledsize.width, scaledsize.height };
-			pBitmapRenderTarget->DrawBitmap(pBitmap, BitmapRect);
+			pBitmapRenderTarget->DrawBitmap(pBitmap.Get(), BitmapRect);
 			hr = pBitmapRenderTarget->EndDraw();
 
 			//After Drawing, retrieve the bitmap from the render target
-			hr = pBitmapRenderTarget->GetBitmap(&pScaledBitmap);
-			SafeRelease(&pBitmap);
-			SafeRelease(&pBitmapRenderTarget);
+			HR(pBitmapRenderTarget->GetBitmap(pScaledBitmap.ReleaseAndGetAddressOf()));
+			pBitmap.Reset();
+			pBitmapRenderTarget.Reset();
+			//SafeRelease(&pBitmap);
+			//SafeRelease(&pBitmapRenderTarget);
 			if (pScaledBitmap)
 			{
 				pBitmap = pScaledBitmap;
@@ -91,7 +94,7 @@ HRESULT Bitmap::CreateGraphicsResources(ID2D1HwndRenderTarget* rt, int resource,
 	return hr;
 }
 
-void Bitmap::Draw(ID2D1HwndRenderTarget* rt, float angle, float x, float y)
+void Bitmap::Draw(ID2D1DeviceContext* rt, float angle, float x, float y)
 {
 	if (pBitmap)
 	{
@@ -102,7 +105,7 @@ void Bitmap::Draw(ID2D1HwndRenderTarget* rt, float angle, float x, float y)
 
 		D2D1_RECT_F	rect = D2D1::RectF(x, y, x + m_Size.width, y + m_Size.height);
 
-		rt->DrawBitmap(pBitmap, rect, 1.0f);
+		rt->DrawBitmap(pBitmap.Get(), rect, 1.0f);
 	}
 }
 
