@@ -73,25 +73,63 @@ void ClockFace::InitGeometry(ID2D1Factory2* pD2DFactory, float size)
 
 void ClockFace::CreateGraphicsResources(ID2D1DeviceContext* pRenderTarget)
 {
-	HR(pRenderTarget->CreateSolidColorBrush(D2D1::ColorF(0.3f, 0.3f, 0.3f, 1.0f), pBackGroundBrush.ReleaseAndGetAddressOf()));
-	HR(pRenderTarget->CreateSolidColorBrush(D2D1::ColorF(0.05f, 0.05f, 0.05f, 0.5f), pSunbrush.ReleaseAndGetAddressOf()));
+	D2D1_GRADIENT_STOP gstop[3] = {};
+	gstop[0].color = { 0.8f, 0.2f, 0.8f, 0.6f };
+	gstop[0].position = { 0.0f };
+	gstop[1].color = { 0.8f, 0.2f, 0.8f, 0.6f };
+	gstop[1].position = { 0.5f };
+	gstop[2].color = { 0.8f, 0.2f, 0.8f, 0.0f };
+	gstop[2].position = { 1.0f };
+	HR(pRenderTarget->CreateGradientStopCollection(gstop, 3, pStopsCollection.ReleaseAndGetAddressOf()));
+
+	D2D1_RADIAL_GRADIENT_BRUSH_PROPERTIES radialprops = {};
+	radialprops.center = D2D1::Point2F(0.0f, 0.0f);
+	radialprops.radiusX = 25;
+	radialprops.radiusY = 25;
+	radialprops.gradientOriginOffset = D2D1::Point2F(0.0f, 0.0f);
+	HR(pRenderTarget->CreateRadialGradientBrush(radialprops, pStopsCollection.Get(), pRadialBackGroundBrush.ReleaseAndGetAddressOf()));
+
+	//pRadialBackGroundBrush->SetGradientOriginOffset();
+	//HR(pRenderTarget->CreateSolidColorBrush(D2D1::ColorF(0.75f, 0.75f, 0.75f, 0.75f), pRadialBackGroundBrush.ReleaseAndGetAddressOf()));
+	HR(pRenderTarget->CreateSolidColorBrush(D2D1::ColorF(0.75f, 0.75f, 0.75f, 0.75f), pBackGroundBrush.ReleaseAndGetAddressOf()));
+	HR(pRenderTarget->CreateSolidColorBrush(D2D1::ColorF(0.1f, 0.1f, 0.1f, 1.0f), pTickBrush.ReleaseAndGetAddressOf()));
+	HR(pRenderTarget->CreateSolidColorBrush(D2D1::ColorF(0.95f, 0.95f, 0.95f, 0.95f), pSunbrush.ReleaseAndGetAddressOf()));
 
 	float scale = 0.6f;
 	//pivot offsets
 	float offsetx = 0.0565476f;
 	float offsety = 0.486842f;
-	HR(minutehandbitmap.CreateGraphicsResources(pRenderTarget, BITMAP_MINUTEHAND, 250, 10, 10, offsetx, offsety, scale));
+	HR(minutehandbitmap.CreateGraphicsResources(pRenderTarget, BITMAP_MINUTEHAND, 220, 10, 220, offsetx, offsety, scale));
 
 	offsetx = 0.088462f;
 	offsety = 0.48913f;
-	HR(hourhandbitmap.CreateGraphicsResources(pRenderTarget, BITMAP_HOURHAND, 30, 50, 30, offsetx, offsety, scale));
+	HR(hourhandbitmap.CreateGraphicsResources(pRenderTarget, BITMAP_HOURHAND, 140, 10, 140, offsetx, offsety, scale));
 
 }
 
-void ClockFace::DrawBackGround(ID2D1DeviceContext* pRenderTarget)
+void ClockFace::DrawBackGround(ID2D1DeviceContext* pRenderTarget, float angle)
 {
-	pRenderTarget->SetTransform(D2D1::Matrix3x2F::Translation(CenterX, CenterY));
+	// Sun and moon
 	{
+		const float bkgRadius = 8.0f;
+		D2D1_POINT_2F rotateoffset = rotate({ 0.0f, Radius * 0.5f }, angle);
+		D2D1::Matrix3x2F translationmatrix = D2D1::Matrix3x2F::Translation(CenterX + rotateoffset.x, CenterY + rotateoffset.y);
+		pRenderTarget->SetTransform(translationmatrix);
+		D2D1_ELLIPSE bkgellipse = { { 0.0f, 0.0f }, bkgRadius, bkgRadius };
+		pRenderTarget->DrawEllipse(bkgellipse, pRadialBackGroundBrush.Get(), 35.0f);
+		pRenderTarget->FillGeometry(moon.Geometry.Get(), pSunbrush.Get());
+
+		rotateoffset = rotate({ 0.0f, Radius * 0.5f }, angle + PI);
+		translationmatrix = D2D1::Matrix3x2F::Translation(CenterX + rotateoffset.x, CenterY + rotateoffset.y);
+		D2D1_ELLIPSE sunellipse = { { 0.0f, 0.0f }, sun.size, sun.size };
+		pRenderTarget->SetTransform(translationmatrix);
+		pRenderTarget->DrawEllipse(bkgellipse, pRadialBackGroundBrush.Get(), 35.0f);
+		pRenderTarget->FillEllipse(sunellipse, pSunbrush.Get());
+		pRenderTarget->FillGeometry(sun.Geometry.Get(), pSunbrush.Get());
+	}
+	// Ticks
+	{
+		pRenderTarget->SetTransform(D2D1::Matrix3x2F::Translation(CenterX, CenterY));
 		const float radius1 = Radius - 16.0f;
 		const float radius2 = Radius - 8.0f;
 		const float radiusOutside = Radius;
@@ -103,7 +141,8 @@ void ClockFace::DrawBackGround(ID2D1DeviceContext* pRenderTarget)
 			D2D1_POINT_2F pointa = { ca * radius1, sa * radius1 };
 			D2D1_POINT_2F pointb = { ca * radius2, sa * radius2 };
 			D2D1_POINT_2F point2 = { ca * radiusOutside, sa * radiusOutside };
-			pRenderTarget->DrawLine((i % 5 == 0) ? pointa : pointb, point2, pBackGroundBrush.Get(), 2.5f);
+			pRenderTarget->DrawLine((i % 5 == 0) ? pointa : pointb, point2, pBackGroundBrush.Get(), 4.0f);
+			pRenderTarget->DrawLine((i % 5 == 0) ? pointa : pointb, point2, pTickBrush.Get(), 2.5f);
 		}
 	}
 }
@@ -112,19 +151,4 @@ void ClockFace::DrawHands(ID2D1DeviceContext* pRenderTarget, float minAgle, floa
 {
 	hourhandbitmap.Draw(pRenderTarget, hourAngle, CenterX, CenterY);
 	minutehandbitmap.Draw(pRenderTarget, minAgle, CenterX, CenterY);
-}
-
-void ClockFace::DrawSunMoon(ID2D1DeviceContext* pRenderTarget, float angle)
-{
-	D2D1_POINT_2F rotateoffset = rotate({ 0.0f, Radius * 0.9f }, angle);
-	D2D1::Matrix3x2F translationmatrix = D2D1::Matrix3x2F::Translation(CenterX + rotateoffset.x, CenterY + rotateoffset.y);
-	pRenderTarget->SetTransform(translationmatrix);
-	pRenderTarget->FillGeometry(moon.Geometry.Get(), pSunbrush.Get());
-
-	rotateoffset = rotate({ 0.0f, Radius * 0.9f }, angle + PI);
-	translationmatrix = D2D1::Matrix3x2F::Translation(CenterX + rotateoffset.x, CenterY + rotateoffset.y);
-	D2D1_ELLIPSE buttonellipse = { { 0.0f, 0.0f }, sun.size, sun.size };
-	pRenderTarget->SetTransform(translationmatrix);
-	pRenderTarget->FillEllipse(buttonellipse, pSunbrush.Get());
-	pRenderTarget->FillGeometry(sun.Geometry.Get(), pSunbrush.Get());
 }

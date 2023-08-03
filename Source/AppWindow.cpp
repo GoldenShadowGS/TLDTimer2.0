@@ -97,6 +97,8 @@ void AppWindow::CreateGraphicsResources()
 	m_DigitalClock.CreateGraphicsResources(dc);
 	m_ClockFace.CreateGraphicsResources(dc);
 	AppWindow::Button::CreateButtonGraphicsResources(dc);
+
+	AdjustTimeofDay(0);
 }
 
 void AppWindow::Paint()
@@ -136,9 +138,8 @@ void AppWindow::Paint()
 		previousHours = hours;
 	}
 
-	m_ClockFace.DrawSunMoon(dc, getDayAngleRad(splitms) + timeofDayOffset);
 
-	m_ClockFace.DrawBackGround(dc);
+	m_ClockFace.DrawBackGround(dc, getDayAngleRad(splitms) + timeofDayOffset);
 
 	m_ClockFace.DrawHands(dc, minuteHandangle * Rad2DegFactor - 90, getHourAngleDeg(alarmms));
 
@@ -285,21 +286,17 @@ void AppWindow::MouseAdjustAlarm(int mousex, int mousey)
 	}
 }
 
-void AppWindow::AdjustTimeofDay(BOOL Forward)
+void AppWindow::AdjustTimeofDay(int amount)
 {
-	if (Forward)
-		timeofdayvalue++;
-	else
-		timeofdayvalue--;
+	if (GetAsyncKeyState(VK_SHIFT) & 0x8000)
+		amount *= 8;
+	constexpr int interval = 192;
+	timeofdayvalue += amount;
 	if (timeofdayvalue > 191)
-		timeofdayvalue = 0;
+		timeofdayvalue -= interval;
 	else if (timeofdayvalue < 0)
-		timeofdayvalue = 191;
-	timeofDayOffset = (float(timeofdayvalue) / 192.0f) * PI2;
-
-	WCHAR buffer[64];
-	swprintf_s(buffer, 64, L"%f", timeofDayOffset);
-	SetWindowTextW(hWindow, buffer);
+		timeofdayvalue += interval;
+	timeofDayOffset = (float(timeofdayvalue) / (float)interval) * PI2;
 }
 
 LRESULT CALLBACK AppWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -330,12 +327,7 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 	{
 	case WM_PAINT:
 	{
-		//if (m_Renderer.isValid())
 		Paint();
-		//else
-		//	throw;
-
-
 	}
 	break;
 	case WM_KILLFOCUS:
@@ -442,6 +434,8 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 			case BUTTON_RESET:
 				Reseting = TRUE;
 				m_pTimer->Reset();
+				timeofdayvalue = 0;
+				AdjustTimeofDay(0);
 				m_App->m_SoundManager.Play(m_App->ResetClick, 1.0f, 1.0f);
 				break;
 			case BUTTON_INCTIME:
@@ -463,13 +457,13 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 				break;
 			case BUTTON_TIMEOFDAYINC:
 			{
-				AdjustTimeofDay(TRUE);
+				AdjustTimeofDay(1);
 				m_App->m_SoundManager.Play(m_App->TimerClick, 1.0f, 1.0f);
 			}
 			break;
 			case BUTTON_TIMEOFDAYDEC:
 			{
-				AdjustTimeofDay(FALSE);
+				AdjustTimeofDay(-1);
 				m_App->m_SoundManager.Play(m_App->TimerClick, 1.0f, 1.0f);
 			}
 			break;
@@ -521,9 +515,9 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 			else if (GrabbedElementLMB == BUTTON_DECTIME)
 				DecrementTime();
 			else if (GrabbedElementLMB == BUTTON_TIMEOFDAYINC)
-				AdjustTimeofDay(TRUE);
+				AdjustTimeofDay(1);
 			else if (GrabbedElementLMB == BUTTON_TIMEOFDAYDEC)
-				AdjustTimeofDay(FALSE);
+				AdjustTimeofDay(-1);
 			else
 				KillRepeatTimer(hWnd);
 			RECT rc;

@@ -85,6 +85,9 @@ void DigitalClock::CreateGraphicsResources(ID2D1DeviceContext* pRenderTarget)
 
 	color = D2D1::ColorF(0.8f, 0.04f, 0.04f, 1.0f);
 	HR(pRenderTarget->CreateSolidColorBrush(color, pHighlightBrush.ReleaseAndGetAddressOf()));
+
+	color = D2D1::ColorF(0.75f, 0.75f, 0.75f, 0.75f);
+	HR(pRenderTarget->CreateSolidColorBrush(color, pBackgroundBrush.ReleaseAndGetAddressOf()));
 }
 
 void DigitalClock::SevenSegment::Draw(ID2D1DeviceContext* pRenderTarget, int value, ID2D1SolidColorBrush* pFullBrush)
@@ -177,10 +180,46 @@ void DigitalClock::Init(ID2D1Factory2* pD2DFactory)
 	m_SevenSegment.InitGeometry(pD2DFactory);
 }
 
-void DigitalClock::Draw(ID2D1DeviceContext* pRenderTarget, D2D1::Matrix3x2F transform, BOOL negative, BOOL Highlighted, BOOL bTenths, INT64 days, INT64 hours, INT64 mins, INT64 tenths)
+float DigitalClock::GetWidth(BOOL negative, BOOL bTenths, INT64 days, INT64 hours, INT64 mins, INT64 tenths)
 {
 	const float DigitSpacing = 100.0f;
 	const float DotSpacing = 40.0f;
+	float spacing = 0.0f;
+
+	if (negative)
+		spacing += DigitSpacing;
+	if (days > 9999)
+		spacing += DigitSpacing;
+	if (days > 999)
+		spacing += DigitSpacing;
+	if (days > 99)
+		spacing += DigitSpacing;
+	if (days > 9)
+		spacing += DigitSpacing;
+	if (days > 0)
+	{
+		spacing += DigitSpacing;
+		spacing += DigitSpacing + DigitSpacing;
+	}
+	if (hours > 9)
+		spacing += DigitSpacing;
+	if (hours > 0)
+		spacing += DigitSpacing + DotSpacing;
+	if (mins > 9)
+		spacing += DigitSpacing;
+	if (bTenths)
+		spacing += DigitSpacing + DotSpacing;
+	return spacing;
+}
+
+void DigitalClock::Draw(ID2D1DeviceContext* pRenderTarget, D2D1::Matrix3x2F transform, BOOL negative, BOOL Highlighted, BOOL bTenths, INT64 days, INT64 hours, INT64 mins, INT64 tenths)
+{
+	const float width = GetWidth(negative, bTenths, days, hours, mins, tenths);
+	const float DigitSpacing = 100.0f;
+	const float DotSpacing = 40.0f;
+	D2D1_ROUNDED_RECT roundedRect = { {-DigitSpacing * 0.75f, -100.0f, width + DigitSpacing * 0.75f, 100.0f}, 50.0f, 50.0f };
+	pRenderTarget->SetTransform(transform);
+	pRenderTarget->FillRoundedRectangle(roundedRect, pBackgroundBrush.Get());
 	float spacing = 0.0f;
 	D2D1::Matrix3x2F DigitTransform = D2D1::Matrix3x2F::Identity();
 	ID2D1SolidColorBrush* pBrush = pNormalBrush.Get();

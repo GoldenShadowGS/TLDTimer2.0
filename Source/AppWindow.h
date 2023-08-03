@@ -63,7 +63,7 @@ private:
 	void DecrementTime();
 	BOOL CheckMouseHand(int mousex, int mousey);
 	void MouseAdjustAlarm(int mousex, int mousey);
-	void AdjustTimeofDay(BOOL Forward);
+	void AdjustTimeofDay(int amount);
 	const WCHAR* m_Title = L"TLD StopWatch";
 	const WCHAR* m_WindowClass = L"MainWindowsClass";
 	HINSTANCE hInst = nullptr;
@@ -87,7 +87,7 @@ private:
 	D2D1::Matrix3x2F m_TransformAddtime{D2D1::Matrix3x2F::Scale(0.1f, 0.1f)* D2D1::Matrix3x2F::Translation(70, 226 + buttonoffset)};
 	D2D1::Matrix3x2F m_TransformAlarm{D2D1::Matrix3x2F::Scale(0.1f, 0.1f)* D2D1::Matrix3x2F::Translation(260, 150 )};
 	float timeofDayOffset = 0.0f;
-	int timeofdayvalue;
+	int timeofdayvalue = 0;
 	INT64 AddTime = 0;
 	Timer* m_pTimer = nullptr;
 	BOOL MouseinWindow = FALSE;

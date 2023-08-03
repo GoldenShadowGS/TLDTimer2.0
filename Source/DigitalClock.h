@@ -8,6 +8,7 @@ public:
 	void CreateGraphicsResources(ID2D1DeviceContext* pRenderTarget);
 	void Draw(ID2D1DeviceContext* pRenderTarget, D2D1::Matrix3x2F transform, BOOL negative, BOOL Highlighted, BOOL bTenths, INT64 days, INT64 hours, INT64 mins, INT64 tenths);
 private:
+	float GetWidth(BOOL negative, BOOL bTenths, INT64 days, INT64 hours, INT64 mins, INT64 tenths);
 	void DrawDot(ID2D1DeviceContext* pRenderTarget, ID2D1SolidColorBrush* Brush);
 	void DrawColon(ID2D1DeviceContext* pRenderTarget, ID2D1SolidColorBrush* Brush);
 	class SevenSegment
@@ -26,7 +27,7 @@ private:
 		};
 		Segment Seg[7];
 	} m_SevenSegment;
-	// Make Comptr
 	ComPtr<ID2D1SolidColorBrush> pNormalBrush;
 	ComPtr<ID2D1SolidColorBrush> pHighlightBrush;
+	ComPtr<ID2D1SolidColorBrush> pBackgroundBrush;
 };

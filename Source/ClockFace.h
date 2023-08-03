@@ -6,15 +6,18 @@ class ClockFace
 {
 public:
 	void CreateGraphicsResources(ID2D1DeviceContext* pRenderTarget);
-	void DrawBackGround(ID2D1DeviceContext* pRenderTarget);
+	void DrawBackGround(ID2D1DeviceContext* pRenderTarget, float angle);
 	void DrawHands(ID2D1DeviceContext* pRenderTarget, float minAgle, float hourAngle);
 	void InitGeometry(ID2D1Factory2* pD2DFactory, float size);
-	void DrawSunMoon(ID2D1DeviceContext* pRenderTarget, float angle);
+	//void DrawSunMoon(ID2D1DeviceContext* pRenderTarget, float angle);
 	float GetCenterX() { return CenterX; }
 	float GetCenterY() { return CenterY; }
 	float GetRadius() { return Radius; }
 private:
 	ComPtr<ID2D1SolidColorBrush> pBackGroundBrush;
+	ComPtr<ID2D1GradientStopCollection> pStopsCollection;
+	ComPtr<ID2D1RadialGradientBrush> pRadialBackGroundBrush;
+	ComPtr<ID2D1SolidColorBrush> pTickBrush;
 	ComPtr<ID2D1SolidColorBrush> pSunbrush;
 	float CenterX = 320;
 	float CenterY = 120;
