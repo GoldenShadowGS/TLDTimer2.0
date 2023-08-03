@@ -6,12 +6,13 @@
 #include "Math.h"
 #include "ComException.h"
 
+// Problems:
+// Add Drop shadow contrast
 
 void AppWindow::Init(HINSTANCE hInstance, Application* app)
 {
 	hInst = hInstance;
 	m_App = app;
-	timeofdayincrement = 1.0f / 192.0f * PI2;
 	RegisterWindowClass(hInstance);
 }
 
@@ -58,7 +59,6 @@ void AppWindow::CreateGraphicsResources()
 	const int smwidth = 22;
 	const int smheight = 22;
 
-
 	int playX = 75;
 	int row1 = 135 + 200;
 	int row2 = 185 + 200;
@@ -77,6 +77,7 @@ void AppWindow::CreateGraphicsResources()
 	int sunincx = 300;
 	int sundecx = 350;
 
+	// Make the geometry inits consistent
 	AppWindow::Button::InitGeometry(m_Renderer.GetFactory(), buttonwidth, buttonheight);
 	m_ClockFace.InitGeometry(m_Renderer.GetFactory(), 12.0);
 	m_Buttons[0].Init(m_Renderer.GetFactory(), BUTTON_START, playX, row1, startbuttonwidth, buttonheight);
@@ -92,22 +93,13 @@ void AppWindow::CreateGraphicsResources()
 	m_Buttons[7].Init(m_Renderer.GetFactory(), BUTTON_TIMEOFDAYINC, sunincx, row2, buttonwidth, buttonheight);
 	m_Buttons[8].Init(m_Renderer.GetFactory(), BUTTON_TIMEOFDAYDEC, sundecx, row2, buttonwidth, buttonheight);
 
-
-
 	ID2D1DeviceContext* dc = m_Renderer.GetDeviceContext();
 	m_DigitalClock.CreateGraphicsResources(dc);
 	m_ClockFace.CreateGraphicsResources(dc);
 	AppWindow::Button::CreateButtonGraphicsResources(dc);
 }
 
-//void AppWindow::DiscardGraphicsResources()
-//{
-//	m_Direct2DDevice.ReleaseGraphicsResources();
-//	m_ClockFace.DiscardGraphicsResources();
-//	//AppWindow::Button::DiscardButtonGraphicsResources();
-//}
-
-void AppWindow::Paint2()
+void AppWindow::Paint()
 {
 	static INT64 previousAlarmms = 0;
 	static INT64 previousHours = 0;
@@ -126,7 +118,6 @@ void AppWindow::Paint2()
 	{
 		m_Buttons[i].Draw(dc, m_pTimer->isStarted(), (GrabbedElementRMB == BUTTON_ADDTIME), HoverElement, GrabbedElementLMB);
 	}
-
 
 	INT64 ms = m_pTimer->GetMilliseconds();
 	INT64 absms = abs(ms);
@@ -158,79 +149,13 @@ void AppWindow::Paint2()
 	if (alarmms)
 		m_DigitalClock.Draw(dc, m_TransformAlarm, FALSE, FALSE, TRUE, GetDays(alarmms), GetHours(alarmms), GetMinutes(alarmms), GetTenths(alarmms));
 
-
-
 	HR(dc->EndDraw());
 	HR(m_Renderer.GetSwapChain()->Present(1, 0));
-}
-
-void AppWindow::Paint()
-{
-	static INT64 previousAlarmms = 0;
-	static INT64 previousHours = 0;
-	// Update minuteHandAngle to match clock
-	if (!GrabLock)
-	{
-		minuteHandangle = getMinuteAngleRad(m_pTimer->GetAlarmTime());
-	}
-	/*
-	HRESULT hr = CreateGraphicsResources();
-	if (SUCCEEDED(hr))
-	{
-		ID2D1HwndRenderTarget* pRenderTarget = m_Direct2DDevice.getD2DRenderTarget();
-		PAINTSTRUCT ps;
-		BeginPaint(hWindow, &ps);
-
-		pRenderTarget->BeginDraw();
-		pRenderTarget->Clear(D2D1::ColorF(D2D1::ColorF::WhiteSmoke));
-
-
-		//pRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
-		//for (int i = 0; i < ButtonCount; i++)
-		//{
-		//	m_Buttons[i].Draw(pRenderTarget, m_pTimer->isStarted(), (GrabbedElementRMB == BUTTON_ADDTIME), HoverElement, GrabbedElementLMB);
-		//}
-
-		INT64 ms = m_pTimer->GetMilliseconds();
-		INT64 absms = abs(ms);
-		INT64 splitms = m_pTimer->GetSplitMilliseconds();
-
-		INT64 alarmms = m_pTimer->GetAlarmTime();
-		if (alarmms == 0 && previousAlarmms > 0 && !GrabLock && !Reseting)
-		{
-			m_App->m_SoundManager.Play(m_App->Alarm, 1.0f, 1.0f);
-		}
-		previousAlarmms = alarmms;
-		{
-			INT64 hours = GetHours(absms);
-			if (hours > previousHours && !Adding)
-				m_App->m_SoundManager.Play(m_App->Bwoop, 1.0f, 1.0f);
-			previousHours = hours;
-		}
-
-		m_ClockFace.DrawSunMoon(pRenderTarget, getDayAngleRad(splitms) + timeofDayOffset);
-
-		m_ClockFace.DrawBackGround(pRenderTarget);
-
-		m_ClockFace.DrawHands(pRenderTarget, minuteHandangle * Rad2DegFactor - 90, getHourAngleDeg(alarmms));
-
-		m_DigitalClock.Draw(pRenderTarget, m_TransformMain, (ms < 0), (absms && (HoverElement == BUTTON_RESET || HoverElement == BUTTON_SPLIT)), TRUE, GetDays(absms), GetHours(absms), GetMinutes(absms), GetTenths(absms));
-		m_DigitalClock.Draw(pRenderTarget, m_TransformSub, FALSE, (splitms && (HoverElement == BUTTON_RESET)), TRUE, GetDays(splitms), GetHours(splitms), GetMinutes(splitms), GetTenths(splitms));
-		INT64 absTime = abs(AddTime);
-		m_DigitalClock.Draw(pRenderTarget, m_TransformAddtime, FALSE, (AddTime && (HoverElement == BUTTON_ZERO)), FALSE, GetDays(absTime), GetHours(absTime), GetMinutes(absTime), GetTenths(absTime));
-		if (alarmms)
-			m_DigitalClock.Draw(pRenderTarget, m_TransformAlarm, FALSE, FALSE, TRUE, GetDays(alarmms), GetHours(alarmms), GetMinutes(alarmms), GetTenths(alarmms));
-
-		hr = pRenderTarget->EndDraw();
-		if (FAILED(hr) || hr == D2DERR_RECREATE_TARGET)
-		{
-			m_Direct2DDevice.ReleaseGraphicsResources();
-		}
-		EndPaint(hWindow, &ps);
-		Reseting = FALSE;
-		Adding = FALSE;
-	}
-	*/
+	Reseting = FALSE;
+	Adding = FALSE;
+	PAINTSTRUCT ps;
+	BeginPaint(hWindow, &ps);
+	EndPaint(hWindow, &ps);
 }
 
 ATOM AppWindow::RegisterWindowClass(HINSTANCE hInstance)
@@ -254,14 +179,14 @@ ATOM AppWindow::RegisterWindowClass(HINSTANCE hInstance)
 	return RegisterClassExW(&wcex);
 }
 
-void AppWindow::SetRepeatTimer()
+void AppWindow::SetRepeatTimer(HWND hWnd)
 {
-	MouseTimerID = SetTimer(hWindow, ID_REPEATTIMER, 50, nullptr);
+	MouseTimerID = SetTimer(hWnd, ID_REPEATTIMER, 50, nullptr);
 }
 
-void AppWindow::KillRepeatTimer()
+void AppWindow::KillRepeatTimer(HWND hWnd)
 {
-	KillTimer(hWindow, MouseTimerID);
+	KillTimer(hWnd, MouseTimerID);
 }
 
 void AppWindow::IncrementTime()
@@ -360,6 +285,23 @@ void AppWindow::MouseAdjustAlarm(int mousex, int mousey)
 	}
 }
 
+void AppWindow::AdjustTimeofDay(BOOL Forward)
+{
+	if (Forward)
+		timeofdayvalue++;
+	else
+		timeofdayvalue--;
+	if (timeofdayvalue > 191)
+		timeofdayvalue = 0;
+	else if (timeofdayvalue < 0)
+		timeofdayvalue = 191;
+	timeofDayOffset = (float(timeofdayvalue) / 192.0f) * PI2;
+
+	WCHAR buffer[64];
+	swprintf_s(buffer, 64, L"%f", timeofDayOffset);
+	SetWindowTextW(hWindow, buffer);
+}
+
 LRESULT CALLBACK AppWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	static AppWindow* window = nullptr;
@@ -388,7 +330,12 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 	{
 	case WM_PAINT:
 	{
-		Paint2();
+		//if (m_Renderer.isValid())
+		Paint();
+		//else
+		//	throw;
+
+
 	}
 	break;
 	case WM_KILLFOCUS:
@@ -443,7 +390,7 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 	case WM_LBUTTONDOWN:
 	{
 		MouseDelay = 0;
-		SetRepeatTimer();
+		SetRepeatTimer(hWnd);
 
 
 		mouseAngle = getMouseAngle(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), m_ClockFace.GetCenterX(), m_ClockFace.GetCenterY(), -HalfPI);
@@ -515,13 +462,17 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 				m_App->m_SoundManager.Play(m_App->TimerClick, 1.0f, 1.0f);
 				break;
 			case BUTTON_TIMEOFDAYINC:
-				timeofDayOffset += timeofdayincrement;
+			{
+				AdjustTimeofDay(TRUE);
 				m_App->m_SoundManager.Play(m_App->TimerClick, 1.0f, 1.0f);
-				break;
+			}
+			break;
 			case BUTTON_TIMEOFDAYDEC:
-				timeofDayOffset -= timeofdayincrement;
+			{
+				AdjustTimeofDay(FALSE);
 				m_App->m_SoundManager.Play(m_App->TimerClick, 1.0f, 1.0f);
-				break;
+			}
+			break;
 			}
 		}
 		GrabbedElementLMB = -1;
@@ -570,11 +521,11 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 			else if (GrabbedElementLMB == BUTTON_DECTIME)
 				DecrementTime();
 			else if (GrabbedElementLMB == BUTTON_TIMEOFDAYINC)
-				timeofDayOffset += timeofdayincrement;
+				AdjustTimeofDay(TRUE);
 			else if (GrabbedElementLMB == BUTTON_TIMEOFDAYDEC)
-				timeofDayOffset -= timeofdayincrement;
+				AdjustTimeofDay(FALSE);
 			else
-				KillRepeatTimer();
+				KillRepeatTimer(hWnd);
 			RECT rc;
 			GetClientRect(hWnd, &rc);
 			InvalidateRect(hWnd, &rc, TRUE);
@@ -590,36 +541,3 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 	}
 	return 0;
 }
-
-//static float distance = 0.0f;
-//float mouseX = (float)GET_X_LPARAM(lParam);
-//float mouseY = (float)GET_Y_LPARAM(lParam);
-//
-//float newdist = GetPointDist(mouseX, mouseY, PrevX, PrevY);
-//float pitch = newdist;
-//float vol = min(2.0f, newdist / 4.0f + 0.25f);
-//PrevX = mouseX;
-//PrevY = mouseY;
-//distance += newdist;
-//const float clickrate = 100;
-//if (distance > clickrate)
-//{
-//	distance -= clickrate;
-//	static int index = 0;
-//	index++;
-//	if (index > 2)
-//		index = 0;
-//	switch (index)
-//	{
-//	case 0:
-//		m_App->m_SoundManager.Play(m_App->Ratchet1, vol, pitch);
-//		break;
-//	case 1:
-//		m_App->m_SoundManager.Play(m_App->Ratchet2, vol, pitch);
-//		break;
-//	case 2:
-//		m_App->m_SoundManager.Play(m_App->Ratchet3, vol, pitch);
-//		break;
-//	}
-//
-//}

@@ -20,16 +20,6 @@ std::vector<BYTE> FlipImage(std::vector<BYTE>& Image, int pitch, int height)
 	return FlippedPixels;
 }
 
-//Bitmap::~Bitmap()
-//{
-//	DiscardGraphicsResources();
-//}
-
-//void Bitmap::DiscardGraphicsResources()
-//{
-//	SafeRelease(&pBitmap);
-//}
-
 HRESULT Bitmap::CreateGraphicsResources(ID2D1DeviceContext* rt, int resource, BYTE r, BYTE g, BYTE b, float pivotx, float pivoty, float scale)
 {
 	HRESULT hr = S_OK;
@@ -80,8 +70,6 @@ HRESULT Bitmap::CreateGraphicsResources(ID2D1DeviceContext* rt, int resource, BY
 			HR(pBitmapRenderTarget->GetBitmap(pScaledBitmap.ReleaseAndGetAddressOf()));
 			pBitmap.Reset();
 			pBitmapRenderTarget.Reset();
-			//SafeRelease(&pBitmap);
-			//SafeRelease(&pBitmapRenderTarget);
 			if (pScaledBitmap)
 			{
 				pBitmap = pScaledBitmap;
