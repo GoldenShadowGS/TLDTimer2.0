@@ -2,6 +2,8 @@
 #include "PCH.h"
 #include "Math.h"
 
+struct Savedstate;
+
 inline INT64 GetTenths(INT64 ms)
 {
 	return ms / 100;
@@ -66,6 +68,8 @@ public:
 	void AddTime(INT64 time);
 	void AdjustAlarm(INT64 ms);
 	INT64 GetAlarmTime();
+	void LoadTime(const Savedstate& ss);
+	void SaveTime(Savedstate& ss);
 private:
 	HWND AppWindow = nullptr;
 	static inline Timer* m_Timer = nullptr;

@@ -18,7 +18,9 @@ void Application::Init(HINSTANCE hInstance, LPWSTR lpCmdLine)
 	ResetClick.Load(SOUND_RESET);
 	Alarm.Load(SOUND_ALARM);
 	Bwoop.Load(SOUND_BWOOP);
-	m_AppWindow.Init(hInstance, this);
+	std::wstring cmdline = lpCmdLine;
+	BOOL isBwoop = cmdline.compare(L"bwoop") == 0;
+	m_AppWindow.Init(hInstance, this, isBwoop);
 	if (!m_AppWindow.Create(&m_Timer, 440, 440))
 		throw std::exception("Window Creation Failed");
 }

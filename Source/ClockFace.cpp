@@ -111,6 +111,7 @@ void ClockFace::DrawBackGround(ID2D1DeviceContext* pRenderTarget, float angle)
 {
 	// Sun and moon
 	{
+		angle += HalfPI;
 		const float bkgRadius = 8.0f;
 		D2D1_POINT_2F rotateoffset = rotate({ 0.0f, Radius * 0.5f }, angle);
 		D2D1::Matrix3x2F translationmatrix = D2D1::Matrix3x2F::Translation(CenterX + rotateoffset.x, CenterY + rotateoffset.y);

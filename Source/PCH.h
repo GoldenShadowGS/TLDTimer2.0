@@ -17,4 +17,5 @@
 #include <vector>
 #include <string>
 #include <chrono>
+#include <fstream>
 using namespace Microsoft::WRL;

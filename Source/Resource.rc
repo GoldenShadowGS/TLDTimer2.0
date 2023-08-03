@@ -16,8 +16,6 @@ SOUND_RESET               WAVDATA                    "Resources/reset.wav"
 SOUND_TIMER               WAVDATA                    "Resources/timerclick.wav"
 SOUND_BWOOP               WAVDATA                    "Resources/bwoop.wav"
 
-
-
 BITMAP_MINUTEHAND         BITMAPDATA                 "resources/MinuteHand.bmp"
 BITMAP_MINUTEHANDSHADOW   BITMAPDATA                 "resources/MinuteHandShadow.bmp"
 BITMAP_HOURHAND           BITMAPDATA                 "resources/HourHand.bmp"

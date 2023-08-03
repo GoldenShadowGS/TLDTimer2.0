@@ -8,6 +8,15 @@ class Application;
 class TimerWindow;
 class Timer;
 
+struct Savedstate
+{
+	INT64 m_AlarmTime = 0;
+	INT64 m_CurrentMS_Duration = 0;
+	INT64 m_SplitMS_Duration = 0;
+	INT64 AddTime = 0;
+	int timeofdayvalue = 0;
+};
+
 class AppWindow
 {
 public:
@@ -47,7 +56,7 @@ public:
 		static inline ComPtr<ID2D1SolidColorBrush> pShapeBrush;
 		int m_ButtonValue = -1;
 	};
-	void Init(HINSTANCE hInstance, Application* app);
+	void Init(HINSTANCE hInstance, Application* app, BOOL isBwoop);
 	BOOL Create(Timer* timer, int width, int height);
 	void CreateGraphicsResources();
 	void Paint();
@@ -64,6 +73,8 @@ private:
 	BOOL CheckMouseHand(int mousex, int mousey);
 	void MouseAdjustAlarm(int mousex, int mousey);
 	void AdjustTimeofDay(int amount);
+	void SaveFile();
+	void Loadfile();
 	const WCHAR* m_Title = L"TLD StopWatch";
 	const WCHAR* m_WindowClass = L"MainWindowsClass";
 	HINSTANCE hInst = nullptr;
@@ -91,5 +102,6 @@ private:
 	INT64 AddTime = 0;
 	Timer* m_pTimer = nullptr;
 	BOOL MouseinWindow = FALSE;
+	BOOL b_Bwoop;
 	UINT_PTR MouseTimerID {};
 };

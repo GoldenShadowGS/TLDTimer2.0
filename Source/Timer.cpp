@@ -1,6 +1,7 @@
 #include "PCH.h"
 #include "Timer.h"
 #include "Resource.h"
+#include "AppWindow.h"
 
 Timer::Timer()
 {
@@ -112,4 +113,20 @@ void Timer::ReDraw(HWND hwnd)
 	RECT rc;
 	GetClientRect(hwnd, &rc);
 	InvalidateRect(hwnd, &rc, TRUE);
+}
+
+void Timer::LoadTime(const Savedstate& ss)
+{
+	m_AlarmTime = ss.m_AlarmTime;
+	m_CurrentMS_Duration = ss.m_CurrentMS_Duration;
+	m_SplitMS_Duration = ss.m_SplitMS_Duration;
+}
+
+void Timer::SaveTime(Savedstate& ss)
+{
+	if (isStarted())
+		Stop();
+	ss.m_AlarmTime = m_AlarmTime;
+	ss.m_CurrentMS_Duration = m_CurrentMS_Duration;
+	ss.m_SplitMS_Duration = m_SplitMS_Duration;
 }

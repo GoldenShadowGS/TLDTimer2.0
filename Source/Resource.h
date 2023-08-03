@@ -32,4 +32,3 @@
 
 #define BITMAP_MINUTEHAND               501
 #define BITMAP_HOURHAND                 502
-

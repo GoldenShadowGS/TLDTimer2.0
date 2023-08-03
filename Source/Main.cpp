@@ -19,11 +19,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 		}
 
 		return (int)msg.wParam;
-		return 0;
 	}
 	catch (std::exception& e)
 	{
-		// TODO Error Handling
+		// Catch Errors and Exit
 		UNREFERENCED_PARAMETER(e);
 		return 0;
 	}

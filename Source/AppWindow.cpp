@@ -6,20 +6,19 @@
 #include "Math.h"
 #include "ComException.h"
 
-// Problems:
-// Add Drop shadow contrast
-
-void AppWindow::Init(HINSTANCE hInstance, Application* app)
+void AppWindow::Init(HINSTANCE hInstance, Application* app, BOOL isBwoop)
 {
 	hInst = hInstance;
 	m_App = app;
+	b_Bwoop = isBwoop;
 	RegisterWindowClass(hInstance);
 }
 
 BOOL AppWindow::Create(Timer* timer, int width, int height)
 {
 	m_pTimer = timer;
-	const DWORD style = WS_OVERLAPPEDWINDOW ^ WS_THICKFRAME ^ WS_MAXIMIZEBOX; // WS_OVERLAPPEDWINDOW ^ WS_THICKFRAME ^ WS_MAXIMIZEBOX     WS_POPUP
+	Loadfile();
+	const DWORD style = WS_OVERLAPPEDWINDOW ^ WS_THICKFRAME ^ WS_MAXIMIZEBOX;
 	const DWORD exstyle = WS_EX_NOREDIRECTIONBITMAP;
 
 	RECT winRect = { 0, 0, width, height };
@@ -45,7 +44,6 @@ BOOL AppWindow::Create(Timer* timer, int width, int height)
 	UpdateWindow(hWindow);
 
 	m_pTimer->SetAppWindow(hWindow);
-
 	return TRUE;
 }
 
@@ -77,7 +75,6 @@ void AppWindow::CreateGraphicsResources()
 	int sunincx = 300;
 	int sundecx = 350;
 
-	// Make the geometry inits consistent
 	AppWindow::Button::InitGeometry(m_Renderer.GetFactory(), buttonwidth, buttonheight);
 	m_ClockFace.InitGeometry(m_Renderer.GetFactory(), 12.0);
 	m_Buttons[0].Init(m_Renderer.GetFactory(), BUTTON_START, playX, row1, startbuttonwidth, buttonheight);
@@ -133,7 +130,7 @@ void AppWindow::Paint()
 	previousAlarmms = alarmms;
 	{
 		INT64 hours = GetHours(absms);
-		if (hours > previousHours && !Adding)
+		if (hours > previousHours && !Adding && b_Bwoop)
 			m_App->m_SoundManager.Play(m_App->Bwoop, 1.0f, 1.0f);
 		previousHours = hours;
 	}
@@ -289,14 +286,45 @@ void AppWindow::MouseAdjustAlarm(int mousex, int mousey)
 void AppWindow::AdjustTimeofDay(int amount)
 {
 	if (GetAsyncKeyState(VK_SHIFT) & 0x8000)
-		amount *= 8;
-	constexpr int interval = 192;
+		amount *= 12;
+	constexpr int interval = 288;
 	timeofdayvalue += amount;
-	if (timeofdayvalue > 191)
+	if (timeofdayvalue > 287)
 		timeofdayvalue -= interval;
 	else if (timeofdayvalue < 0)
 		timeofdayvalue += interval;
 	timeofDayOffset = (float(timeofdayvalue) / (float)interval) * PI2;
+}
+
+void AppWindow::SaveFile()
+{
+	Savedstate ss;
+	m_pTimer->SaveTime(ss);
+	ss.timeofdayvalue = timeofdayvalue;
+	ss.AddTime = AddTime;
+	std::ofstream file;
+	file.open("TLDClock.data", std::ios::binary);
+	if (file.is_open())
+	{
+		file.write(reinterpret_cast<char*>(&ss), sizeof(Savedstate));
+		file.close();
+	}
+}
+
+void AppWindow::Loadfile()
+{
+	Savedstate ss = {};
+	std::ifstream is;
+	is.open("TLDClock.data", std::ios::binary);
+	if (is.is_open())
+	{
+		is.read(reinterpret_cast<char*>(&ss), sizeof(Savedstate));
+		is.close();
+		m_pTimer->LoadTime(ss);
+		timeofdayvalue = ss.timeofdayvalue;
+		AddTime = ss.AddTime;
+		Adding = TRUE;
+	}
 }
 
 LRESULT CALLBACK AppWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -528,6 +556,7 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 	}
 	break;
 	case WM_DESTROY:
+		SaveFile();
 		PostQuitMessage(0);
 		break;
 	default:
