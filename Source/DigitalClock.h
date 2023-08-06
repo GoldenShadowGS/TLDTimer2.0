@@ -6,9 +6,10 @@ class DigitalClock
 public:
 	void Init(ID2D1Factory2* pD2DFactory);
 	void CreateGraphicsResources(ID2D1DeviceContext* pRenderTarget);
-	void Draw(ID2D1DeviceContext* pRenderTarget, D2D1::Matrix3x2F transform, BOOL negative, BOOL Highlighted, BOOL bTenths, INT64 days, INT64 hours, INT64 mins, INT64 tenths);
+	void Draw(ID2D1DeviceContext* dc, D2D1::Matrix3x2F transform, BOOL Highlighted, BOOL bTenths, INT64 ms);
 private:
-	float GetWidth(BOOL negative, BOOL bTenths, INT64 days, INT64 hours, INT64 mins, INT64 tenths);
+	void DrawInternal(ID2D1DeviceContext* dc, D2D1::Matrix3x2F transform, BOOL Highlighted, BOOL bTenths, INT64 days, INT64 hours, INT64 mins, INT64 tenths);
+	float GetWidth(BOOL bTenths, INT64 days, INT64 hours, INT64 mins, INT64 tenths);
 	void DrawDot(ID2D1DeviceContext* pRenderTarget, ID2D1SolidColorBrush* Brush);
 	void DrawColon(ID2D1DeviceContext* pRenderTarget, ID2D1SolidColorBrush* Brush);
 	class SevenSegment

@@ -6,6 +6,8 @@
 #include "Math.h"
 #include "ComException.h"
 
+// TODO Egg Timer stop ticking down when it is being held by the mouse
+
 void AppWindow::Init(HINSTANCE hInstance, Application* app, BOOL isBwoop)
 {
 	hInst = hInstance;
@@ -78,23 +80,24 @@ void AppWindow::CreateGraphicsResources()
 	AppWindow::Button::InitGeometry(m_Renderer.GetFactory(), buttonwidth, buttonheight);
 	m_ClockFace.InitGeometry(m_Renderer.GetFactory(), 12.0);
 	m_Buttons[0].Init(m_Renderer.GetFactory(), BUTTON_START, playX, row1, startbuttonwidth, buttonheight);
-	m_Buttons[1].Init(m_Renderer.GetFactory(), BUTTON_SPLIT, splitX, row1, buttonwidth, buttonheight);
 
-	m_Buttons[2].Init(m_Renderer.GetFactory(), BUTTON_RESET, resetx, resety, smwidth, smheight);
+	m_Buttons[1].Init(m_Renderer.GetFactory(), BUTTON_RESET, resetx, resety, smwidth, smheight);
 
-	m_Buttons[3].Init(m_Renderer.GetFactory(), BUTTON_ADDTIME, addx, row2, buttonwidth, buttonheight);
-	m_Buttons[4].Init(m_Renderer.GetFactory(), BUTTON_INCTIME, incx, row2, buttonwidth, buttonheight);
-	m_Buttons[5].Init(m_Renderer.GetFactory(), BUTTON_DECTIME, decx, row2, buttonwidth, buttonheight);
-	m_Buttons[6].Init(m_Renderer.GetFactory(), BUTTON_ZERO, zerox, zeroy, smwidth, smheight);
+	m_Buttons[2].Init(m_Renderer.GetFactory(), BUTTON_ADDTIME, addx, row2, buttonwidth, buttonheight);
+	m_Buttons[3].Init(m_Renderer.GetFactory(), BUTTON_INCTIME, incx, row2, buttonwidth, buttonheight);
+	m_Buttons[4].Init(m_Renderer.GetFactory(), BUTTON_DECTIME, decx, row2, buttonwidth, buttonheight);
+	m_Buttons[5].Init(m_Renderer.GetFactory(), BUTTON_ZERO, zerox, zeroy, smwidth, smheight);
 
-	m_Buttons[7].Init(m_Renderer.GetFactory(), BUTTON_TIMEOFDAYINC, sunincx, row2, buttonwidth, buttonheight);
-	m_Buttons[8].Init(m_Renderer.GetFactory(), BUTTON_TIMEOFDAYDEC, sundecx, row2, buttonwidth, buttonheight);
+	m_Buttons[6].Init(m_Renderer.GetFactory(), BUTTON_TIMEOFDAYINC, sunincx, row2, buttonwidth, buttonheight);
+	m_Buttons[7].Init(m_Renderer.GetFactory(), BUTTON_TIMEOFDAYDEC, sundecx, row2, buttonwidth, buttonheight);
 
 	ID2D1DeviceContext* dc = m_Renderer.GetDeviceContext();
 	m_DigitalClock.CreateGraphicsResources(dc);
 	m_ClockFace.CreateGraphicsResources(dc);
 	AppWindow::Button::CreateButtonGraphicsResources(dc);
-
+	shapesun = CreateShape(m_Renderer.GetFactory(), dc, SHAPE_SUN, D2D1::ColorF(0.95f, 0.95f, 0.95f, 0.6f), 100.0f);
+	shapemoon = CreateShape(m_Renderer.GetFactory(), dc, SHAPE_MOON, D2D1::ColorF(0.95f, 0.95f, 0.95f, 0.6f), 100.0f);
+	shapeclockticks = CreateShape(m_Renderer.GetFactory(), dc, SHAPE_CLICKTICKS, D2D1::ColorF(0.1f, 0.1f, 0.1f, 0.75f), 220.0f);
 	AdjustTimeofDay(0);
 }
 
@@ -118,35 +121,36 @@ void AppWindow::Paint()
 		m_Buttons[i].Draw(dc, m_pTimer->isStarted(), (GrabbedElementRMB == BUTTON_ADDTIME), HoverElement, GrabbedElementLMB);
 	}
 
-	INT64 ms = m_pTimer->GetMilliseconds();
-	INT64 absms = abs(ms);
-	INT64 splitms = m_pTimer->GetSplitMilliseconds();
+	INT64 maintime = m_pTimer->GetMilliseconds();
 
-	INT64 alarmms = m_pTimer->GetAlarmTime();
-	if (alarmms == 0 && previousAlarmms > 0 && !GrabLock && !Reseting)
+	INT64 alarmTime = m_pTimer->GetAlarmTime();
+
+	if (alarmTime == 0 && previousAlarmms > 0 && !GrabLock && !Reseting)
 	{
 		m_App->m_SoundManager.Play(m_App->Alarm, 1.0f, 1.0f);
 	}
-	previousAlarmms = alarmms;
+	previousAlarmms = alarmTime;
 	{
-		INT64 hours = GetHours(absms);
+		INT64 hours = GetHours(maintime);
 		if (hours > previousHours && !Adding && b_Bwoop)
 			m_App->m_SoundManager.Play(m_App->Bwoop, 1.0f, 1.0f);
 		previousHours = hours;
 	}
 
 
-	m_ClockFace.DrawBackGround(dc, getDayAngleRad(splitms) + timeofDayOffset);
+	m_ClockFace.DrawBackGround(dc, getDayAngleRad(maintime) + timeofDayOffset);
 
-	m_ClockFace.DrawHands(dc, minuteHandangle * Rad2DegFactor - 90, getHourAngleDeg(alarmms));
+	m_ClockFace.DrawHands(dc, minuteHandangle * Rad2DegFactor - 90, getHourAngleDeg(alarmTime));
 
-	m_DigitalClock.Draw(dc, m_TransformMain, (ms < 0), (absms && (HoverElement == BUTTON_RESET || HoverElement == BUTTON_SPLIT)), TRUE, GetDays(absms), GetHours(absms), GetMinutes(absms), GetTenths(absms));
-	m_DigitalClock.Draw(dc, m_TransformSub, FALSE, (splitms && (HoverElement == BUTTON_RESET)), TRUE, GetDays(splitms), GetHours(splitms), GetMinutes(splitms), GetTenths(splitms));
-	INT64 absTime = abs(AddTime);
-	m_DigitalClock.Draw(dc, m_TransformAddtime, FALSE, (AddTime && (HoverElement == BUTTON_ZERO)), FALSE, GetDays(absTime), GetHours(absTime), GetMinutes(absTime), GetTenths(absTime));
-	if (alarmms)
-		m_DigitalClock.Draw(dc, m_TransformAlarm, FALSE, FALSE, TRUE, GetDays(alarmms), GetHours(alarmms), GetMinutes(alarmms), GetTenths(alarmms));
 
+	m_DigitalClock.Draw(dc, m_TransformMain, (maintime && (HoverElement == BUTTON_RESET)), TRUE, maintime);
+
+	m_DigitalClock.Draw(dc, m_TransformAddtime, (AddTime && (HoverElement == BUTTON_ZERO)), FALSE, AddTime);
+	if (alarmTime)
+		m_DigitalClock.Draw(dc, m_TransformAlarm, FALSE, TRUE, alarmTime);
+	//shapesun.Draw(dc, { 120.0f, 120.0f });
+	//shapemoon.Draw(dc, { 120.0f, 220.0f });
+	//shapeclockticks.Draw(dc, { 130.0f, 130.0f });
 	HR(dc->EndDraw());
 	HR(m_Renderer.GetSwapChain()->Present(1, 0));
 	Reseting = FALSE;
@@ -243,6 +247,7 @@ void AppWindow::MouseAdjustAlarm(int mousex, int mousey)
 		if (minuteHandangle < 6.0f && minuteHandangle > PI)
 		{
 			GrabLock = FALSE;
+			m_pTimer->MouseRelease();
 			m_App->m_SoundManager.Play(m_App->SplitClick, 1.0f, 1.0f);
 		}
 		minuteHandangle = 0.0f;
@@ -301,7 +306,7 @@ void AppWindow::SaveFile()
 	Savedstate ss;
 	m_pTimer->SaveTime(ss);
 	ss.timeofdayvalue = timeofdayvalue;
-	ss.AddTime = AddTime;
+	ss.AddTime1 = AddTime;
 	std::ofstream file;
 	file.open("TLDClock.data", std::ios::binary);
 	if (file.is_open())
@@ -322,7 +327,7 @@ void AppWindow::Loadfile()
 		is.close();
 		m_pTimer->LoadTime(ss);
 		timeofdayvalue = ss.timeofdayvalue;
-		AddTime = ss.AddTime;
+		AddTime = ss.AddTime1;
 		Adding = TRUE;
 	}
 }
@@ -418,6 +423,7 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 
 		if (CheckMouseHand(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)))
 		{
+			m_pTimer->MouseGrab();
 			MouseAdjustAlarm(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam));
 			GrabbedElementLMB = CLOCK_HANDLE;
 			GrabLock = TRUE;
@@ -455,10 +461,6 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 				}
 			}
 			break;
-			case BUTTON_SPLIT:
-				m_pTimer->Split();
-				m_App->m_SoundManager.Play(m_App->SplitClick, 1.0f, 1.0f);
-				break;
 			case BUTTON_RESET:
 				Reseting = TRUE;
 				m_pTimer->Reset();
@@ -498,6 +500,7 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 			}
 		}
 		GrabbedElementLMB = -1;
+		m_pTimer->MouseRelease();
 		{
 			RECT rc;
 			GetClientRect(hWnd, &rc);

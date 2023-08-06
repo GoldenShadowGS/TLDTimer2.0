@@ -57,28 +57,81 @@ class Timer
 {
 public:
 	Timer();
+	~Timer();
 	void Start();
 	void Stop();
 	void Reset();
 	BOOL isStarted() { return m_bStarted; }
 	INT64 GetMilliseconds();
 	void SetAppWindow(HWND hwnd) { AppWindow = hwnd; }
-	void Split();
-	INT64 GetSplitMilliseconds();
 	void AddTime(INT64 time);
 	void AdjustAlarm(INT64 ms);
 	INT64 GetAlarmTime();
+	void MouseGrab();
+	void MouseRelease();
 	void LoadTime(const Savedstate& ss);
 	void SaveTime(Savedstate& ss);
 private:
 	HWND AppWindow = nullptr;
-	static inline Timer* m_Timer = nullptr;
-	static void Timerproc(HWND hWnd, UINT Param2, UINT_PTR Param3, DWORD Param4);
-	static void ReDraw(HWND hwnd);
-	BOOL m_bStarted = FALSE;
-	UINT_PTR m_TimerID {};
-	std::chrono::time_point<std::chrono::steady_clock> start;
+	void ReDraw();
+	void ClockThreadMain();
+
+	class ActiveTimer
+	{
+	public:
+		void ResetStart()
+		{
+			const std::lock_guard<std::mutex> lock(start_Mutex);
+			start = std::chrono::steady_clock::now();
+		}
+		INT64 GetActiveDuration()
+		{
+			std::chrono::time_point<std::chrono::steady_clock> now = std::chrono::steady_clock::now();
+			return std::chrono::duration_cast<std::chrono::milliseconds>(now - GetStartTime()).count();
+		}
+	private:
+		std::chrono::time_point<std::chrono::steady_clock> GetStartTime()
+		{
+			const std::lock_guard<std::mutex> lock(start_Mutex);
+			return start;
+		}
+		std::mutex start_Mutex;
+		std::chrono::time_point<std::chrono::steady_clock> start;
+	};
+	ActiveTimer m_ActiveTimer;
 	INT64 m_AlarmTime = 0;
-	INT64 m_CurrentMS_Duration = 0;
-	INT64 m_SplitMS_Duration = 0;
+	INT64 m_AlarmStartTime = 0;
+	BOOL m_MouseGrabbed = FALSE;
+	class SavedDuration
+	{
+	public:
+		INT64 GetSavedDuration()
+		{
+			const std::lock_guard<std::mutex> lock(saved_duration_Mutex);
+			return m_SavedDuration;
+		}
+		void IncrementDuration(INT64 duration)
+		{
+			const std::lock_guard<std::mutex> lock(saved_duration_Mutex);
+			m_SavedDuration += duration;
+		}
+		void SetDuration(INT64 duration)
+		{
+			const std::lock_guard<std::mutex> lock(saved_duration_Mutex);
+			m_SavedDuration = duration;
+		}
+		void Reset()
+		{
+			const std::lock_guard<std::mutex> lock(saved_duration_Mutex);
+			m_SavedDuration = 0;
+		}
+	private:
+		std::mutex saved_duration_Mutex;
+		INT64 m_SavedDuration = 0;
+	};
+	SavedDuration m_SavedDuration;
+	HANDLE m_EventHandle = {};
+	std::jthread m_ClockThread;
+	std::atomic<BOOL> m_bStarted = FALSE;
+	std::atomic<BOOL> m_bTimerThreadRunning = FALSE;
 };

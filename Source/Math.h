@@ -59,3 +59,43 @@ inline float GetAngleDistance(float angle1, float angle2)
 		dist = PI2 - dist;
 	return dist;
 }
+
+inline D2D1_POINT_2F rotate(D2D1_POINT_2F point, float angle)
+{
+	float cosa = cos(angle);
+	float sina = sin(angle);
+	return { point.x * cosa - point.y * sina,point.y * cosa + point.x * sina };
+}
+
+inline D2D1_POINT_2F translate(D2D1_POINT_2F point, D2D1_POINT_2F point2)
+{
+	return { point.x + point2.x, point.y + point2.y };
+}
+
+//inline float AngleSnap(float angle, float snap)
+//{
+//	const float normalizedangle = angle / PI2;
+//	return (round(normalizedangle * snap) / snap) * PI2;
+//}
+
+//inline INT64 RoundAngleToMinute(float angle)
+//{
+//	const float normalizedangle = angle / PI2;
+//	return (INT64)round(normalizedangle * 60.0f);
+//}
+
+//inline INT64 RoundThousand(INT64 value)
+//{
+//	INT64 r = value % 1000;
+//	if (r > 500)
+//		return value + 1000 - r;
+//	else
+//		return value - r;
+//}
+
+// Debug Output 
+//{
+//	WCHAR buffer[64];
+//	swprintf_s(buffer, 64, L"Redraw() %I64i, %I64i\n", CurrentTime, sleeptime);
+//	OutputDebugStringW(buffer);
+//}

@@ -3,6 +3,7 @@
 #include "Direct2D.h"
 #include "DigitalClock.h"
 #include "ClockFace.h"
+#include "Shape.h"
 
 class Application;
 class TimerWindow;
@@ -10,10 +11,11 @@ class Timer;
 
 struct Savedstate
 {
+	INT64 m_SavedDuration = 0;
+	INT64 AddTime1 = 0;
+	INT64 AddTime2 = 0;
+	INT64 AddTime3 = 0;
 	INT64 m_AlarmTime = 0;
-	INT64 m_CurrentMS_Duration = 0;
-	INT64 m_SplitMS_Duration = 0;
-	INT64 AddTime = 0;
 	int timeofdayvalue = 0;
 };
 
@@ -43,7 +45,6 @@ public:
 		Shape Border;
 		static inline Shape Play;
 		static inline Shape Pause;
-		static inline Shape Split;
 		static inline Shape Reset;
 		static inline Shape Increment;
 		static inline Shape Decrement;
@@ -64,6 +65,9 @@ public:
 	HWND GetwindowHandle() { return hWindow; }
 	Renderer m_Renderer;
 private:
+	RasterizedShape shapesun;
+	RasterizedShape shapemoon;
+	RasterizedShape shapeclockticks;
 	ATOM RegisterWindowClass(HINSTANCE hInstance);
 	LRESULT CALLBACK ClassWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 	void SetRepeatTimer(HWND hWnd);
@@ -82,7 +86,7 @@ private:
 	Application* m_App = nullptr;
 	DigitalClock m_DigitalClock;
 	ClockFace m_ClockFace;
-	static const int ButtonCount = 9;
+	static const int ButtonCount = 8;
 	Button m_Buttons[ButtonCount];
 	int HoverElement = -1;
 	int GrabbedElementLMB = -1;
@@ -93,8 +97,7 @@ private:
 	float mouseAngle = 0.0f;
 	float minuteHandangle = 0.0f;
 	const float buttonoffset = 200.0f;
-	D2D1::Matrix3x2F m_TransformMain{D2D1::Matrix3x2F::Scale(0.15f, 0.15f)* D2D1::Matrix3x2F::Translation(20, 78 + 100)};
-	D2D1::Matrix3x2F m_TransformSub{D2D1::Matrix3x2F::Scale(0.1f, 0.1f)* D2D1::Matrix3x2F::Translation(46, 28 + 100)};
+	D2D1::Matrix3x2F m_TransformMain{D2D1::Matrix3x2F::Scale(0.15f, 0.15f)* D2D1::Matrix3x2F::Translation(24, 200)};
 	D2D1::Matrix3x2F m_TransformAddtime{D2D1::Matrix3x2F::Scale(0.1f, 0.1f)* D2D1::Matrix3x2F::Translation(70, 226 + buttonoffset)};
 	D2D1::Matrix3x2F m_TransformAlarm{D2D1::Matrix3x2F::Scale(0.1f, 0.1f)* D2D1::Matrix3x2F::Translation(260, 150 )};
 	float timeofDayOffset = 0.0f;
@@ -102,6 +105,6 @@ private:
 	INT64 AddTime = 0;
 	Timer* m_pTimer = nullptr;
 	BOOL MouseinWindow = FALSE;
-	BOOL b_Bwoop;
+	BOOL b_Bwoop = FALSE;
 	UINT_PTR MouseTimerID {};
 };

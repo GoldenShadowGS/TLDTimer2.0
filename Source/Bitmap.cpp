@@ -20,81 +20,77 @@ std::vector<BYTE> FlipImage(std::vector<BYTE>& Image, int pitch, int height)
 	return FlippedPixels;
 }
 
-HRESULT Bitmap::CreateGraphicsResources(ID2D1DeviceContext* rt, int resource, BYTE r, BYTE g, BYTE b, float pivotx, float pivoty, float scale)
+void Bitmap::Create(ID2D1DeviceContext* dc, int resource, COLORREF color, D2D1_POINT_2F pivot, float scale)
 {
-	HRESULT hr = S_OK;
-	if (pBitmap == nullptr)
+	UINT PixelWidth;
+	UINT PixelHeight;
+	UINT Pitch;
+	std::vector<BYTE> Pixels8Bit = FileLoader(resource, PixelWidth, PixelHeight, Pitch);
+	std::vector<int> Pixels32Bit(Pixels8Bit.size());
+	for (UINT64 i = 0; i < Pixels8Bit.size(); i++)
 	{
-		std::vector<BYTE> ExpandedPixels;
-		std::vector<BYTE> RawPixels = FileLoader(resource);
-		ExpandedPixels.resize(RawPixels.size() * 4);
-		for (UINT64 i = 0; i < RawPixels.size(); i++)
-		{
-			const size_t expandedindex = i * 4;
-			const float alpha = (255 - RawPixels[i]) / 255.0f;
-			ExpandedPixels[expandedindex + 0] = BYTE(b * alpha);
-			ExpandedPixels[expandedindex + 1] = BYTE(g * alpha);
-			ExpandedPixels[expandedindex + 2] = BYTE(r * alpha);
-			ExpandedPixels[expandedindex + 3] = BYTE(alpha * 255.0f);
-		}
-		m_Pivot = D2D1::Point2F(pivotx, pivoty);
-
-		D2D1_SIZE_U bitmapsize = {};
-		bitmapsize.width = m_PixelWidth;
-		bitmapsize.height = m_PixelHeight;
-		m_Size.width = (float)m_PixelWidth;
-		m_Size.height = (float)m_PixelHeight;
-
-		D2D1_BITMAP_PROPERTIES bitmapprops = {};
-		bitmapprops.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
-		bitmapprops.pixelFormat.alphaMode = D2D1_ALPHA_MODE_PREMULTIPLIED;
-		bitmapprops.dpiX = 96.0f;
-		bitmapprops.dpiY = 96.0f;
-		HRESULT hr = rt->CreateBitmap(bitmapsize, ExpandedPixels.data(), m_Pitch, bitmapprops, &pBitmap);
-		if (FAILED(hr))
-			return hr;
-		//Rescale
-		if (scale != 1.0f)
-		{
-			ComPtr<ID2D1Bitmap> pScaledBitmap = nullptr;
-			D2D1_SIZE_F scaledsize = { bitmapsize.width * scale, bitmapsize.height * scale };
-			hr = rt->CreateCompatibleRenderTarget(scaledsize, &pBitmapRenderTarget);
-
-			pBitmapRenderTarget->BeginDraw();
-
-			D2D1_RECT_F BitmapRect = { 0.0f, 0.0f, scaledsize.width, scaledsize.height };
-			pBitmapRenderTarget->DrawBitmap(pBitmap.Get(), BitmapRect);
-			hr = pBitmapRenderTarget->EndDraw();
-
-			//After Drawing, retrieve the bitmap from the render target
-			HR(pBitmapRenderTarget->GetBitmap(pScaledBitmap.ReleaseAndGetAddressOf()));
-			pBitmap.Reset();
-			pBitmapRenderTarget.Reset();
-			if (pScaledBitmap)
-			{
-				pBitmap = pScaledBitmap;
-				m_Size = pBitmap->GetSize();
-			}
-		}
-		halfwidth = m_Size.width * 0.5f;
-		halfheight = m_Size.height * 0.5f;
+		const float alpha = (255 - Pixels8Bit[i]) / 255.0f;
+		Pixels32Bit[i] =
+			BYTE(GetRValue(color) * alpha) +
+			(BYTE(GetGValue(color) * alpha) << 8) +
+			(BYTE(GetBValue(color) * alpha) << 16) +
+			(BYTE(alpha * 255.0f) << 24);
 	}
-	return hr;
+
+	D2D1_SIZE_U bitmapsize = {};
+	bitmapsize.width = PixelWidth;
+	bitmapsize.height = PixelHeight;
+	m_Size = { (float)PixelWidth * scale, (float)PixelHeight * scale };
+
+	// m_Pivot is the Center of the bitmap for positioning and rotation
+	m_Pivot = D2D1::Point2F(pivot.x * m_Size.width, pivot.y * m_Size.height);
+
+	// Resource Bitmap
+	D2D1_BITMAP_PROPERTIES bitmapprops = {};
+	bitmapprops.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
+	bitmapprops.pixelFormat.alphaMode = D2D1_ALPHA_MODE_PREMULTIPLIED;
+	bitmapprops.dpiX = 96.0f;
+	bitmapprops.dpiY = 96.0f;
+
+	// Create a temporary bitmap 
+	ComPtr<ID2D1Bitmap> bitmapA;
+	HR(dc->CreateBitmap(bitmapsize, Pixels32Bit.data(), Pitch, bitmapprops, &bitmapA));
+
+	// Create Render Target of the scaled bitmap
+	ComPtr<ID2D1BitmapRenderTarget> BitmapRenderTarget;
+	HR(dc->CreateCompatibleRenderTarget(m_Size, &BitmapRenderTarget));
+
+	// Draw Scaled Bitmap
+	BitmapRenderTarget->BeginDraw();
+
+	D2D1_RECT_F BitmapRect = { 0.0f, 0.0f, m_Size.width, m_Size.height };
+	BitmapRenderTarget->DrawBitmap(bitmapA.Get(), BitmapRect);
+	HR(BitmapRenderTarget->EndDraw());
+
+	//After Drawing, retrieve the scaled bitmap from the render target and store it in the class member ComPtr
+	HR(BitmapRenderTarget->GetBitmap(m_Bitmap.ReleaseAndGetAddressOf()));
 }
 
-void Bitmap::Draw(ID2D1DeviceContext* rt, float angle, float x, float y)
+void Bitmap::Draw(ID2D1DeviceContext* dc, D2D1_POINT_2F center)
 {
-	if (pBitmap)
-	{
-		const float offsetx = m_Pivot.x * m_Size.width;
-		const float offsety = m_Pivot.y * m_Size.height;
-		D2D1_POINT_2F Pivot = { offsetx + x, offsety + y };
-		rt->SetTransform(D2D1::Matrix3x2F::Rotation(angle, Pivot) * D2D1::Matrix3x2F::Translation(-offsetx, -offsety));
+	dc->SetTransform(D2D1::Matrix3x2F::Translation(center.x - m_Pivot.x, center.y - m_Pivot.y));
+	D2D1_RECT_F	rect = D2D1::RectF(0, 0, m_Size.width, m_Size.height);
+	dc->DrawBitmap(m_Bitmap.Get(), rect, 1.0f);
+}
 
-		D2D1_RECT_F	rect = D2D1::RectF(x, y, x + m_Size.width, y + m_Size.height);
+void Bitmap::Draw(ID2D1DeviceContext* dc, float angle, D2D1_POINT_2F center)
+{
+	dc->SetTransform(D2D1::Matrix3x2F::Rotation(angle, m_Pivot) * D2D1::Matrix3x2F::Translation(center.x - m_Pivot.x, center.y - m_Pivot.y));
+	D2D1_RECT_F	rect = D2D1::RectF(0, 0, m_Size.width, m_Size.height);
+	dc->DrawBitmap(m_Bitmap.Get(), rect, 1.0f);
+}
 
-		rt->DrawBitmap(pBitmap.Get(), rect, 1.0f);
-	}
+void Bitmap::Draw(ID2D1DeviceContext* dc, float angle, D2D1_POINT_2F center, float scale)
+{
+	const D2D1_POINT_2F ScaledPivot = { m_Pivot.x * scale,m_Pivot.y * scale };
+	dc->SetTransform(D2D1::Matrix3x2F::Scale(scale, scale) * D2D1::Matrix3x2F::Rotation(angle, ScaledPivot) * D2D1::Matrix3x2F::Translation(center.x - ScaledPivot.x, center.y - ScaledPivot.y));
+	D2D1_RECT_F	rect = D2D1::RectF(0, 0, m_Size.width, m_Size.height);
+	dc->DrawBitmap(m_Bitmap.Get(), rect, 1.0f);
 }
 
 inline UINT Align(UINT uLocation, UINT uAlign)
@@ -102,9 +98,9 @@ inline UINT Align(UINT uLocation, UINT uAlign)
 	return ((uLocation + (uAlign - 1)) & ~(uAlign - 1));
 }
 
-std::vector<BYTE> Bitmap::FileLoader(int resource)
+std::vector<BYTE> Bitmap::FileLoader(_In_ int resource, _Out_ UINT& width, _Out_ UINT& height, _Out_ UINT& pitch)
 {
-	std::vector<BYTE> RawPixels;
+	std::vector<BYTE> Pixels8Bit;
 	struct BMPHeader
 	{
 		char bm[2];
@@ -127,7 +123,7 @@ std::vector<BYTE> Bitmap::FileLoader(int resource)
 	ResourceLoader resLoader(resource, L"BITMAPDATA");
 	resLoader.Read(bmpHeader.bm, 2);
 	if (!(bmpHeader.bm[0] == 'B' && bmpHeader.bm[1] == 'M'))
-		return RawPixels;
+		throw std::exception("Bad Bitmap");
 	resLoader.Read(&bmpHeader.bmpfilesize, sizeof(bmpHeader.bmpfilesize));
 	resLoader.Read(&bmpHeader.appspecific1, sizeof(bmpHeader.appspecific1));
 	resLoader.Read(&bmpHeader.appspecific2, sizeof(bmpHeader.appspecific2));
@@ -140,14 +136,14 @@ std::vector<BYTE> Bitmap::FileLoader(int resource)
 	resLoader.Read(&dibHeader.pixelcompression, sizeof(dibHeader.pixelcompression));
 	resLoader.Read(&dibHeader.rawPixelDataSize, sizeof(dibHeader.rawPixelDataSize));
 
-	m_PixelWidth = dibHeader.width;
-	m_PixelHeight = dibHeader.height;
-	m_Pitch = Align(dibHeader.width * 4, 16);
+	width = dibHeader.width;
+	height = dibHeader.height;
+	pitch = Align(dibHeader.width * 4, 16);
 
 	const size_t buffersize = dibHeader.rawPixelDataSize;
-	RawPixels.resize(buffersize);
+	Pixels8Bit.resize(buffersize);
 	resLoader.Seek(bmpHeader.pixeldataoffset);
-	resLoader.Read(RawPixels.data(), buffersize);
+	resLoader.Read(Pixels8Bit.data(), buffersize);
 
-	return FlipImage(RawPixels, m_Pitch, m_PixelHeight);
+	return FlipImage(Pixels8Bit, pitch, height);
 }

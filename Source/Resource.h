@@ -19,7 +19,7 @@
 #define ID_REPEATTIMER                  302
 
 #define BUTTON_START                    401
-#define BUTTON_SPLIT                    402
+
 #define BUTTON_RESET                    403
 #define BUTTON_ADDTIME                  404
 #define BUTTON_INCTIME                  405
@@ -32,3 +32,10 @@
 
 #define BITMAP_MINUTEHAND               501
 #define BITMAP_HOURHAND                 502
+
+#define SHAPE_PLAY                      601
+#define SHAPE_PAUSE                     602
+#define SHAPE_RESET                     603
+#define SHAPE_SUN                       604
+#define SHAPE_MOON                      605
+#define SHAPE_CLICKTICKS                606

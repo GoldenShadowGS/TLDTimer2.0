@@ -3,6 +3,7 @@
 #include "Direct2D.h"
 #include "Math.h"
 #include "ComException.h"
+#include "Timer.h"
 
 void DigitalClock::SevenSegment::Segment::Init(ID2D1Factory2* pD2DFactory, BOOL vertical, float longdist, float shortdist, float halfwidth, float sk, D2D1_POINT_2F offset)
 {
@@ -180,14 +181,12 @@ void DigitalClock::Init(ID2D1Factory2* pD2DFactory)
 	m_SevenSegment.InitGeometry(pD2DFactory);
 }
 
-float DigitalClock::GetWidth(BOOL negative, BOOL bTenths, INT64 days, INT64 hours, INT64 mins, INT64 tenths)
+float DigitalClock::GetWidth(BOOL bTenths, INT64 days, INT64 hours, INT64 mins, INT64 tenths)
 {
 	const float DigitSpacing = 100.0f;
 	const float DotSpacing = 40.0f;
 	float spacing = 0.0f;
 
-	if (negative)
-		spacing += DigitSpacing;
 	if (days > 9999)
 		spacing += DigitSpacing;
 	if (days > 999)
@@ -212,71 +211,71 @@ float DigitalClock::GetWidth(BOOL negative, BOOL bTenths, INT64 days, INT64 hour
 	return spacing;
 }
 
-void DigitalClock::Draw(ID2D1DeviceContext* pRenderTarget, D2D1::Matrix3x2F transform, BOOL negative, BOOL Highlighted, BOOL bTenths, INT64 days, INT64 hours, INT64 mins, INT64 tenths)
+void DigitalClock::Draw(ID2D1DeviceContext* dc, D2D1::Matrix3x2F transform, BOOL Highlighted, BOOL bTenths, INT64 ms)
 {
-	const float width = GetWidth(negative, bTenths, days, hours, mins, tenths);
+	assert(ms >= 0);
+	DrawInternal(dc, transform, Highlighted, bTenths, GetDays(ms), GetHours(ms), GetMinutes(ms), GetTenths(ms));
+}
+
+void DigitalClock::DrawInternal(ID2D1DeviceContext* dc, D2D1::Matrix3x2F transform, BOOL Highlighted, BOOL bTenths, INT64 days, INT64 hours, INT64 mins, INT64 tenths)
+{
+	const float width = GetWidth(bTenths, days, hours, mins, tenths);
 	const float DigitSpacing = 100.0f;
 	const float DotSpacing = 40.0f;
 	D2D1_ROUNDED_RECT roundedRect = { {-DigitSpacing * 0.75f, -100.0f, width + DigitSpacing * 0.75f, 100.0f}, 50.0f, 50.0f };
-	pRenderTarget->SetTransform(transform);
-	pRenderTarget->FillRoundedRectangle(roundedRect, pBackgroundBrush.Get());
+	dc->SetTransform(transform);
+	dc->FillRoundedRectangle(roundedRect, pBackgroundBrush.Get());
 	float spacing = 0.0f;
 	D2D1::Matrix3x2F DigitTransform = D2D1::Matrix3x2F::Identity();
 	ID2D1SolidColorBrush* pBrush = pNormalBrush.Get();
 	if (Highlighted)
 		pBrush = pHighlightBrush.Get();
 
-	if (negative)
-	{
-		pRenderTarget->SetTransform(DigitTransform * transform);
-		m_SevenSegment.Draw(pRenderTarget, -1, pBrush);
-		spacing += DigitSpacing;
-	}
 	// 5 digits of days
 	if (days > 9999)
 	{
 		int digit = (days / 10000) % 10;
 		DigitTransform = D2D1::Matrix3x2F::Translation(spacing, 0.0f);
-		pRenderTarget->SetTransform(DigitTransform * transform);
-		m_SevenSegment.Draw(pRenderTarget, digit, pBrush);
+		dc->SetTransform(DigitTransform * transform);
+		m_SevenSegment.Draw(dc, digit, pBrush);
 		spacing += DigitSpacing;
 	}
 	if (days > 999)
 	{
 		int digit = (days / 1000) % 10;
 		DigitTransform = D2D1::Matrix3x2F::Translation(spacing, 0.0f);
-		pRenderTarget->SetTransform(DigitTransform * transform);
-		m_SevenSegment.Draw(pRenderTarget, digit, pBrush);
+		dc->SetTransform(DigitTransform * transform);
+		m_SevenSegment.Draw(dc, digit, pBrush);
 		spacing += DigitSpacing;
 	}
 	if (days > 99)
 	{
 		int digit = (days / 100) % 10;
 		DigitTransform = D2D1::Matrix3x2F::Translation(spacing, 0.0f);
-		pRenderTarget->SetTransform(DigitTransform * transform);
-		m_SevenSegment.Draw(pRenderTarget, digit, pBrush);
+		dc->SetTransform(DigitTransform * transform);
+		m_SevenSegment.Draw(dc, digit, pBrush);
 		spacing += DigitSpacing;
 	}
 	if (days > 9)
 	{
 		DigitTransform = D2D1::Matrix3x2F::Translation(spacing, 0.0f);
-		pRenderTarget->SetTransform(DigitTransform * transform);
+		dc->SetTransform(DigitTransform * transform);
 		int digit = (days / 10) % 10;
-		m_SevenSegment.Draw(pRenderTarget, digit, pBrush);
+		m_SevenSegment.Draw(dc, digit, pBrush);
 		spacing += DigitSpacing;
 	}
 	if (days > 0)
 	{
 		int digit = days % 10;
 		DigitTransform = D2D1::Matrix3x2F::Translation(spacing, 0.0f);
-		pRenderTarget->SetTransform(DigitTransform * transform);
-		m_SevenSegment.Draw(pRenderTarget, digit, pBrush);
+		dc->SetTransform(DigitTransform * transform);
+		m_SevenSegment.Draw(dc, digit, pBrush);
 		//DrawColon(pRenderTarget);
 		spacing += DigitSpacing;
 		// d for Days
 		DigitTransform = D2D1::Matrix3x2F::Translation(spacing, 0.0f);
-		pRenderTarget->SetTransform(DigitTransform * transform);
-		m_SevenSegment.Draw(pRenderTarget, 'd', pBrush);
+		dc->SetTransform(DigitTransform * transform);
+		m_SevenSegment.Draw(dc, 'd', pBrush);
 		spacing += DigitSpacing + DigitSpacing;
 	}
 	// Draw Hours
@@ -285,17 +284,17 @@ void DigitalClock::Draw(ID2D1DeviceContext* pRenderTarget, D2D1::Matrix3x2F tran
 	{
 		int digit = clippedhours / 10;
 		DigitTransform = D2D1::Matrix3x2F::Translation(spacing, 0.0f);
-		pRenderTarget->SetTransform(DigitTransform * transform);
-		m_SevenSegment.Draw(pRenderTarget, digit, pBrush);
+		dc->SetTransform(DigitTransform * transform);
+		m_SevenSegment.Draw(dc, digit, pBrush);
 		spacing += DigitSpacing;
 	}
 	if (hours > 0)
 	{
 		int digit = clippedhours % 10;
 		DigitTransform = D2D1::Matrix3x2F::Translation(spacing, 0.0f);
-		pRenderTarget->SetTransform(DigitTransform * transform);
-		m_SevenSegment.Draw(pRenderTarget, digit, pBrush);
-		DrawColon(pRenderTarget, pBrush);
+		dc->SetTransform(DigitTransform * transform);
+		m_SevenSegment.Draw(dc, digit, pBrush);
+		DrawColon(dc, pBrush);
 		spacing += DigitSpacing + DotSpacing;
 	}
 	// Draw Minutes
@@ -304,25 +303,25 @@ void DigitalClock::Draw(ID2D1DeviceContext* pRenderTarget, D2D1::Matrix3x2F tran
 	{
 		int digit = clippedminutes / 10;
 		DigitTransform = D2D1::Matrix3x2F::Translation(spacing, 0.0f);
-		pRenderTarget->SetTransform(DigitTransform * transform);
-		m_SevenSegment.Draw(pRenderTarget, digit, pBrush);
+		dc->SetTransform(DigitTransform * transform);
+		m_SevenSegment.Draw(dc, digit, pBrush);
 		spacing += DigitSpacing;
 	}
 	{
 		int digit = clippedminutes % 10;
 		DigitTransform = D2D1::Matrix3x2F::Translation(spacing, 0.0f);
-		pRenderTarget->SetTransform(DigitTransform * transform);
-		m_SevenSegment.Draw(pRenderTarget, digit, pBrush);
+		dc->SetTransform(DigitTransform * transform);
+		m_SevenSegment.Draw(dc, digit, pBrush);
 	}
 	// Draw Tenths
 	if (bTenths)
 	{
-		DrawDot(pRenderTarget, pBrush);
+		DrawDot(dc, pBrush);
 		spacing += DigitSpacing + DotSpacing;
 		int digit = tenths % 10;
 		DigitTransform = D2D1::Matrix3x2F::Translation(spacing, 0.0f);
-		pRenderTarget->SetTransform(DigitTransform * transform);
-		m_SevenSegment.Draw(pRenderTarget, digit, pBrush);
+		dc->SetTransform(DigitTransform * transform);
+		m_SevenSegment.Draw(dc, digit, pBrush);
 	}
 }
 

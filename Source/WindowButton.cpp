@@ -101,58 +101,58 @@ void AppWindow::Button::InitGeometry(ID2D1Factory2* pD2DFactory, float width, fl
 	}
 	// Split Button
 	{
-		HRESULT hr = pD2DFactory->CreatePathGeometry(&Split.Geometry);
-		if (FAILED(hr)) return;
+		//HRESULT hr = pD2DFactory->CreatePathGeometry(&Split.Geometry);
+		//if (FAILED(hr)) return;
 
-		hr = Split.Geometry->Open(&Split.Sink);
-		if (FAILED(hr)) return;
-		Split.Sink->SetFillMode(D2D1_FILL_MODE_WINDING);
-		float radiusInner = 11;
-		float radiusOuter = 17;
-		float angle1 = 0.00001f;
-		float angle2 = 0.0f;
-		{
-			D2D1_POINT_2F p1 = { cos(angle1) * radiusInner, sin(angle1) * radiusInner };
-			D2D1_POINT_2F p2 = { cos(angle2) * radiusInner, sin(angle2) * radiusInner };
-			D2D1_POINT_2F p3 = { cos(angle2) * radiusOuter, sin(angle2) * radiusOuter };
-			D2D1_POINT_2F p4 = { cos(angle1) * radiusOuter, sin(angle1) * radiusOuter };
+		//hr = Split.Geometry->Open(&Split.Sink);
+		//if (FAILED(hr)) return;
+		//Split.Sink->SetFillMode(D2D1_FILL_MODE_WINDING);
+		//float radiusInner = 11;
+		//float radiusOuter = 17;
+		//float angle1 = 0.00001f;
+		//float angle2 = 0.0f;
+		//{
+		//	D2D1_POINT_2F p1 = { cos(angle1) * radiusInner, sin(angle1) * radiusInner };
+		//	D2D1_POINT_2F p2 = { cos(angle2) * radiusInner, sin(angle2) * radiusInner };
+		//	D2D1_POINT_2F p3 = { cos(angle2) * radiusOuter, sin(angle2) * radiusOuter };
+		//	D2D1_POINT_2F p4 = { cos(angle1) * radiusOuter, sin(angle1) * radiusOuter };
 
-			Split.Sink->BeginFigure(p1, D2D1_FIGURE_BEGIN_FILLED);
-			Split.Sink->AddArc(D2D1::ArcSegment(p2, D2D1::SizeF(radiusInner, radiusInner), 0.0f, D2D1_SWEEP_DIRECTION_CLOCKWISE, D2D1_ARC_SIZE_LARGE));
-			Split.Sink->AddLine(p3);
-			Split.Sink->AddArc(D2D1::ArcSegment(p4, D2D1::SizeF(radiusOuter, radiusOuter), 0.0f, D2D1_SWEEP_DIRECTION_COUNTER_CLOCKWISE, D2D1_ARC_SIZE_LARGE));
-			Split.Sink->EndFigure(D2D1_FIGURE_END_CLOSED);
-		}
-		{
-			float handwidth = 1.0f;
-			float handlength = 11.0f;
-			D2D1_POINT_2F p1 = { -handwidth, 0 };
-			D2D1_POINT_2F p2 = { -handwidth, -handlength };
-			D2D1_POINT_2F p3 = { handwidth, -handlength };
-			D2D1_POINT_2F p4 = { handwidth, 0 };
+		//	Split.Sink->BeginFigure(p1, D2D1_FIGURE_BEGIN_FILLED);
+		//	Split.Sink->AddArc(D2D1::ArcSegment(p2, D2D1::SizeF(radiusInner, radiusInner), 0.0f, D2D1_SWEEP_DIRECTION_CLOCKWISE, D2D1_ARC_SIZE_LARGE));
+		//	Split.Sink->AddLine(p3);
+		//	Split.Sink->AddArc(D2D1::ArcSegment(p4, D2D1::SizeF(radiusOuter, radiusOuter), 0.0f, D2D1_SWEEP_DIRECTION_COUNTER_CLOCKWISE, D2D1_ARC_SIZE_LARGE));
+		//	Split.Sink->EndFigure(D2D1_FIGURE_END_CLOSED);
+		//}
+		//{
+		//	float handwidth = 1.0f;
+		//	float handlength = 11.0f;
+		//	D2D1_POINT_2F p1 = { -handwidth, 0 };
+		//	D2D1_POINT_2F p2 = { -handwidth, -handlength };
+		//	D2D1_POINT_2F p3 = { handwidth, -handlength };
+		//	D2D1_POINT_2F p4 = { handwidth, 0 };
 
-			Split.Sink->BeginFigure(p1, D2D1_FIGURE_BEGIN_FILLED);
-			Split.Sink->AddLine(p2);
-			Split.Sink->AddLine(p3);
-			Split.Sink->AddLine(p4);
-			Split.Sink->EndFigure(D2D1_FIGURE_END_CLOSED);
-		}
-		{
-			float handwidth = 1.0f;
-			float handlength = 8.0f;
-			D2D1_POINT_2F p1 = { 0, -handwidth };
-			D2D1_POINT_2F p2 = { handlength, -handwidth };
-			D2D1_POINT_2F p3 = { handlength, handwidth };
-			D2D1_POINT_2F p4 = { 0, handwidth };
+		//	Split.Sink->BeginFigure(p1, D2D1_FIGURE_BEGIN_FILLED);
+		//	Split.Sink->AddLine(p2);
+		//	Split.Sink->AddLine(p3);
+		//	Split.Sink->AddLine(p4);
+		//	Split.Sink->EndFigure(D2D1_FIGURE_END_CLOSED);
+		//}
+		//{
+		//	float handwidth = 1.0f;
+		//	float handlength = 8.0f;
+		//	D2D1_POINT_2F p1 = { 0, -handwidth };
+		//	D2D1_POINT_2F p2 = { handlength, -handwidth };
+		//	D2D1_POINT_2F p3 = { handlength, handwidth };
+		//	D2D1_POINT_2F p4 = { 0, handwidth };
 
-			Split.Sink->BeginFigure(p1, D2D1_FIGURE_BEGIN_FILLED);
-			Split.Sink->AddLine(p2);
-			Split.Sink->AddLine(p3);
-			Split.Sink->AddLine(p4);
-			Split.Sink->EndFigure(D2D1_FIGURE_END_CLOSED);
-		}
-		hr = Split.Sink->Close();
-		if (FAILED(hr)) return;
+		//	Split.Sink->BeginFigure(p1, D2D1_FIGURE_BEGIN_FILLED);
+		//	Split.Sink->AddLine(p2);
+		//	Split.Sink->AddLine(p3);
+		//	Split.Sink->AddLine(p4);
+		//	Split.Sink->EndFigure(D2D1_FIGURE_END_CLOSED);
+		//}
+		//hr = Split.Sink->Close();
+		//if (FAILED(hr)) return;
 	}
 	// Reset Button
 	{
@@ -162,10 +162,10 @@ void AppWindow::Button::InitGeometry(ID2D1Factory2* pD2DFactory, float width, fl
 		hr = Reset.Geometry->Open(&Reset.Sink);
 		if (FAILED(hr)) return;
 		Reset.Sink->SetFillMode(D2D1_FILL_MODE_WINDING);
-		float radiusInner = 6;
-		float radiusOuter = 9;
+		float radiusOuter = 9.0f;
+		float radiusInner = radiusOuter * (2.0f/3.0f);
 		float midradius = (radiusOuter - radiusInner) * 0.5f + radiusInner;
-		float arrowwidth = 4.0f;
+		float arrowwidth = radiusOuter * (4.0f / 9.0f);
 		float anglearrow = 0.5f;
 		float angle1 = -2.35f;
 		float angle2 = 3.2f;
@@ -310,9 +310,6 @@ void AppWindow::Button::Draw(ID2D1DeviceContext* pRenderTarget, BOOL timing, BOO
 	{
 	case BUTTON_START:
 		pRenderTarget->FillGeometry(timing ? Pause.Geometry.Get() : Play.Geometry.Get(), pShapeBrush.Get());
-		break;
-	case BUTTON_SPLIT:
-		pRenderTarget->FillGeometry(Split.Geometry.Get(), pShapeBrush.Get());
 		break;
 	case BUTTON_RESET:
 		pRenderTarget->FillGeometry(Reset.Geometry.Get(), pShapeBrush.Get());

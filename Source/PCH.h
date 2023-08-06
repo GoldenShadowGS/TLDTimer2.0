@@ -14,8 +14,10 @@
 #include <dcomp.h>
 
 #include <vector>
-#include <vector>
 #include <string>
 #include <chrono>
 #include <fstream>
+#include <thread>
+#include <atomic>
+#include <assert.h>
 using namespace Microsoft::WRL;
