@@ -4,6 +4,7 @@
 #include "ComException.h"
 #include "Math.h"
 #include "Resource.h"
+#include "Bitmap.h"
 
 RasterizedShape CreateShape(ID2D1Factory2* factory, ID2D1DeviceContext* dc, int shapeindex, D2D1::ColorF color, float size)
 {
@@ -84,6 +85,82 @@ RasterizedShape CreateShape(ID2D1Factory2* factory, ID2D1DeviceContext* dc, int 
 		Sink->EndFigure(D2D1_FIGURE_END_CLOSED);
 	}
 	break;
+	case SHAPE_UP:
+	{
+		float width = 10.0f;
+		float height = 8.0f;
+		D2D1_POINT_2F p1 = { -width, height };
+		D2D1_POINT_2F p2 = { 0.0f, -height };
+		D2D1_POINT_2F p3 = { width, height };
+		Sink->BeginFigure(p1, D2D1_FIGURE_BEGIN_FILLED);
+		Sink->AddLine(p2);
+		Sink->AddLine(p3);
+		Sink->EndFigure(D2D1_FIGURE_END_CLOSED);
+	}
+	break;
+	case SHAPE_DOWN:
+	{
+		float width = 10.0f;
+		float height = 8.0f;
+		D2D1_POINT_2F p1 = { -width, -height };
+		D2D1_POINT_2F p2 = { 0.0f, height };
+		D2D1_POINT_2F p3 = { width, -height };
+		Sink->BeginFigure(p1, D2D1_FIGURE_BEGIN_FILLED);
+		Sink->AddLine(p2);
+		Sink->AddLine(p3);
+		Sink->EndFigure(D2D1_FIGURE_END_CLOSED);
+	}
+	break;
+	case SHAPE_PLUS:
+	{
+		float lgLength = size * 0.5f;
+		float smLength = size * 0.15f;
+		D2D1_POINT_2F p1 = { -lgLength, -smLength };
+		D2D1_POINT_2F p2 = { -smLength, -smLength };
+		D2D1_POINT_2F p3 = { -smLength, -lgLength };
+		D2D1_POINT_2F p4 = { smLength, -lgLength };
+
+		D2D1_POINT_2F p5 = { smLength, -smLength };
+		D2D1_POINT_2F p6 = { lgLength, -smLength };
+		D2D1_POINT_2F p7 = { lgLength, smLength };
+		D2D1_POINT_2F p8 = { smLength, smLength };
+
+		D2D1_POINT_2F p9 = { smLength, lgLength };
+		D2D1_POINT_2F p10 = { -smLength, lgLength };
+		D2D1_POINT_2F p11 = { -smLength, smLength };
+		D2D1_POINT_2F p12 = { -lgLength, smLength };
+
+		Sink->BeginFigure(p1, D2D1_FIGURE_BEGIN_FILLED);
+		Sink->AddLine(p2);
+		Sink->AddLine(p3);
+		Sink->AddLine(p4);
+		Sink->AddLine(p5);
+		Sink->AddLine(p6);
+		Sink->AddLine(p7);
+		Sink->AddLine(p8);
+		Sink->AddLine(p9);
+		Sink->AddLine(p10);
+		Sink->AddLine(p11);
+		Sink->AddLine(p12);
+		Sink->EndFigure(D2D1_FIGURE_END_CLOSED);
+	}
+	break;
+	case SHAPE_MINUS:
+	{
+		float lgLength = size * 0.5f;
+		float smLength = size * 0.15f;
+		D2D1_POINT_2F p1 = { -lgLength, -smLength };
+		D2D1_POINT_2F p2 = { lgLength, -smLength };
+		D2D1_POINT_2F p3 = { lgLength, smLength };
+		D2D1_POINT_2F p4 = { -lgLength, smLength };
+
+		Sink->BeginFigure(p1, D2D1_FIGURE_BEGIN_FILLED);
+		Sink->AddLine(p2);
+		Sink->AddLine(p3);
+		Sink->AddLine(p4);
+		Sink->EndFigure(D2D1_FIGURE_END_CLOSED);
+	}
+	break;
 	case SHAPE_SUN:
 	{
 		float sunradius = size / 4.0f;
@@ -132,11 +209,29 @@ RasterizedShape CreateShape(ID2D1Factory2* factory, ID2D1DeviceContext* dc, int 
 	return shape;
 }
 
-void RasterizedShape::Draw(ID2D1DeviceContext* dc, D2D1_POINT_2F center)
+RasterizedShape Load32BitBitmap(ID2D1DeviceContext* dc, int resource)
+{
+	RasterizedShape shape;
+	Bitmap bitmap;
+	bitmap.Create32bit(dc, resource, { 0.5f, 0.5f });
+	shape.m_Bitmap = bitmap.m_Bitmap;
+	shape.m_Pivot = bitmap.m_Pivot;
+	shape.m_Size = bitmap.m_Size;
+	return shape;
+}
+
+void RasterizedShape::Draw(ID2D1DeviceContext* dc, D2D1_POINT_2F center, float opacity)
 {
 	dc->SetTransform(D2D1::Matrix3x2F::Translation(center.x - m_Pivot.x, center.y - m_Pivot.y));
 	D2D1_RECT_F	rect = D2D1::RectF(0, 0, m_Size.width, m_Size.height);
-	dc->DrawBitmap(m_Bitmap.Get(), rect, 1.0f);
+	dc->DrawBitmap(m_Bitmap.Get(), rect, opacity);
+}
+
+void RasterizedShape::DrawScaled(ID2D1DeviceContext* dc, D2D1_POINT_2F center, float scale)
+{
+	dc->SetTransform(D2D1::Matrix3x2F::Scale(scale, scale) * D2D1::Matrix3x2F::Translation(center.x - m_Pivot.x * scale, center.y - m_Pivot.y * scale));
+	D2D1_RECT_F	rect = D2D1::RectF(0, 0, m_Size.width, m_Size.height);
+	dc->DrawBitmap(m_Bitmap.Get(), rect);
 }
 
 void RasterizedShape::Rasterize(ID2D1DeviceContext* dc, ID2D1PathGeometry* geometry, ID2D1SolidColorBrush* brush)
@@ -183,8 +278,6 @@ void RasterizedShape::RasterizeClockTicks(ID2D1DeviceContext* dc, ID2D1SolidColo
 
 void RasterizedShape::RasterizeSunMoon(ID2D1DeviceContext* dc, ID2D1PathGeometry* geometry, ID2D1SolidColorBrush* brush, BOOL sun, float radius)
 {
-	//ComPtr<ID2D1SolidColorBrush> Brush;
-	//HR(dc->CreateSolidColorBrush(D2D1::ColorF(0.95f, 0.95f, 0.95f, 0.6f), Brush.ReleaseAndGetAddressOf()));
 	ComPtr<ID2D1GradientStopCollection> StopsCollection;
 	ComPtr<ID2D1RadialGradientBrush> RadialBackGroundBrush;
 	ComPtr<ID2D1BitmapRenderTarget> BitmapRenderTarget;
@@ -208,18 +301,6 @@ void RasterizedShape::RasterizeSunMoon(ID2D1DeviceContext* dc, ID2D1PathGeometry
 
 	BitmapRenderTarget->BeginDraw();
 
-	//draw outline Temp
-	//{
-	//	BitmapRenderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
-	//	D2D1_POINT_2F p1 = { 0, 0 };
-	//	D2D1_POINT_2F p2 = { m_Size.width, 0 };
-	//	D2D1_POINT_2F p3 = { m_Size.width, m_Size.height };
-	//	D2D1_POINT_2F p4 = { 0, m_Size.height };
-	//	BitmapRenderTarget->DrawLine(p1, p2, brush, 2.0f);
-	//	BitmapRenderTarget->DrawLine(p2, p3, brush, 2.0f);
-	//	BitmapRenderTarget->DrawLine(p3, p4, brush, 2.0f);
-	//	BitmapRenderTarget->DrawLine(p4, p1, brush, 2.0f);
-	//}
 	BitmapRenderTarget->SetTransform(D2D1::Matrix3x2F::Translation(m_Pivot.x, m_Pivot.y));
 
 	const float bkgRadius = 8.0f;
@@ -233,7 +314,6 @@ void RasterizedShape::RasterizeSunMoon(ID2D1DeviceContext* dc, ID2D1PathGeometry
 	}
 	BitmapRenderTarget->FillGeometry(geometry, brush);
 
-	//BitmapRenderTarget->FillGeometry(geometry, Brush.Get());
 	HR(BitmapRenderTarget->EndDraw());
 
 	HR(BitmapRenderTarget->GetBitmap(m_Bitmap.ReleaseAndGetAddressOf()));

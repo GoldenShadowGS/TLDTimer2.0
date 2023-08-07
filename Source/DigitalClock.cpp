@@ -79,18 +79,6 @@ void DigitalClock::SevenSegment::InitGeometry(ID2D1Factory2* pD2DFactory)
 	Seg[6].Init(pD2DFactory, FALSE, longdist, shortdist, halfwidth, sk, offset);
 }
 
-void DigitalClock::CreateGraphicsResources(ID2D1DeviceContext* pRenderTarget)
-{
-	D2D1::ColorF color = D2D1::ColorF(0.02f, 0.02f, 0.02f, 1.0f);
-	HR(pRenderTarget->CreateSolidColorBrush(color, pNormalBrush.ReleaseAndGetAddressOf()));
-
-	color = D2D1::ColorF(0.8f, 0.04f, 0.04f, 1.0f);
-	HR(pRenderTarget->CreateSolidColorBrush(color, pHighlightBrush.ReleaseAndGetAddressOf()));
-
-	color = D2D1::ColorF(0.75f, 0.75f, 0.75f, 0.75f);
-	HR(pRenderTarget->CreateSolidColorBrush(color, pBackgroundBrush.ReleaseAndGetAddressOf()));
-}
-
 void DigitalClock::SevenSegment::Draw(ID2D1DeviceContext* pRenderTarget, int value, ID2D1SolidColorBrush* pFullBrush)
 {
 	switch (value)
@@ -176,9 +164,17 @@ void DigitalClock::SevenSegment::Draw(ID2D1DeviceContext* pRenderTarget, int val
 	}
 }
 
-void DigitalClock::Init(ID2D1Factory2* pD2DFactory)
+void DigitalClock::Init(ID2D1Factory2* pD2DFactory, ID2D1DeviceContext* dc)
 {
 	m_SevenSegment.InitGeometry(pD2DFactory);
+	D2D1::ColorF color = D2D1::ColorF(0.02f, 0.02f, 0.02f, 1.0f);
+	HR(dc->CreateSolidColorBrush(color, pNormalBrush.ReleaseAndGetAddressOf()));
+
+	color = D2D1::ColorF(0.78f, 0.57f, 0.71f, 1.0f);
+	HR(dc->CreateSolidColorBrush(color, pHighlightBrush.ReleaseAndGetAddressOf()));
+
+	color = D2D1::ColorF(0.75f, 0.75f, 0.75f, 0.75f);
+	HR(dc->CreateSolidColorBrush(color, pBackgroundBrush.ReleaseAndGetAddressOf()));
 }
 
 float DigitalClock::GetWidth(BOOL bTenths, INT64 days, INT64 hours, INT64 mins, INT64 tenths)
@@ -224,12 +220,13 @@ void DigitalClock::DrawInternal(ID2D1DeviceContext* dc, D2D1::Matrix3x2F transfo
 	const float DotSpacing = 40.0f;
 	D2D1_ROUNDED_RECT roundedRect = { {-DigitSpacing * 0.75f, -100.0f, width + DigitSpacing * 0.75f, 100.0f}, 50.0f, 50.0f };
 	dc->SetTransform(transform);
-	dc->FillRoundedRectangle(roundedRect, pBackgroundBrush.Get());
+	if (Highlighted)
+	dc->FillRoundedRectangle(roundedRect, pHighlightBrush.Get());
+	else
+		dc->FillRoundedRectangle(roundedRect, pBackgroundBrush.Get());
 	float spacing = 0.0f;
 	D2D1::Matrix3x2F DigitTransform = D2D1::Matrix3x2F::Identity();
 	ID2D1SolidColorBrush* pBrush = pNormalBrush.Get();
-	if (Highlighted)
-		pBrush = pHighlightBrush.Get();
 
 	// 5 digits of days
 	if (days > 9999)

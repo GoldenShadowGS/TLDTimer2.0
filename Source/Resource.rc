@@ -20,3 +20,6 @@ BITMAP_MINUTEHAND         BITMAPDATA                 "resources/MinuteHand.bmp"
 BITMAP_MINUTEHANDSHADOW   BITMAPDATA                 "resources/MinuteHandShadow.bmp"
 BITMAP_HOURHAND           BITMAPDATA                 "resources/HourHand.bmp"
 BITMAP_HOURHANDSHADOW     BITMAPDATA                 "resources/HourHandShadow.bmp"
+
+BITMAP_BWOOPON            BITMAPDATA                 "resources/bwoopON.bmp"
+BITMAP_BWOOPOFF           BITMAPDATA                 "resources/bwoopOFF.bmp"

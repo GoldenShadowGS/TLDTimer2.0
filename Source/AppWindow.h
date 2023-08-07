@@ -4,6 +4,7 @@
 #include "DigitalClock.h"
 #include "ClockFace.h"
 #include "Shape.h"
+#include "Button.h"
 
 class Application;
 class TimerWindow;
@@ -12,52 +13,16 @@ class Timer;
 struct Savedstate
 {
 	INT64 m_SavedDuration = 0;
-	INT64 AddTime1 = 0;
-	INT64 AddTime2 = 0;
-	INT64 AddTime3 = 0;
+	INT64 AddTime[3] = {};
 	INT64 m_AlarmTime = 0;
 	int timeofdayvalue = 0;
+	BOOL Bwoop = FALSE;
 };
 
 class AppWindow
 {
 public:
-	class Button
-	{
-	public:
-		void Init(ID2D1Factory2* pD2DFactory, int Buttonvalue, int x, int y, int w, int h);
-		static void InitGeometry(ID2D1Factory2* pD2DFactory, float width, float height);
-		void Draw(ID2D1DeviceContext* pRenderTarget, BOOL timing, BOOL negative, int hover, int grab);
-		int HitTest(int x, int y);
-		static void CreateButtonGraphicsResources(ID2D1DeviceContext* pRenderTarget);
-		RECT GetRect() { return HitTestRect; }
-	private:
-		RECT HitTestRect {};
-		float centerX = 0.0f;
-		float centerY = 0.0f;
-		float width = 0.0f;
-		float height = 0.0f;
-		struct Shape
-		{
-			ComPtr<ID2D1PathGeometry> Geometry;
-			ComPtr<ID2D1GeometrySink> Sink;
-		};
-		Shape Border;
-		static inline Shape Play;
-		static inline Shape Pause;
-		static inline Shape Reset;
-		static inline Shape Increment;
-		static inline Shape Decrement;
-		static inline Shape Add;
-		static inline Shape Sub;
-		static inline ComPtr<ID2D1SolidColorBrush> pOutlineBrush;
-		static inline ComPtr<ID2D1SolidColorBrush> pFillBrush;
-		static inline ComPtr<ID2D1SolidColorBrush> pHoverBrush;
-		static inline ComPtr<ID2D1SolidColorBrush> pPressedBrush;
-		static inline ComPtr<ID2D1SolidColorBrush> pShapeBrush;
-		int m_ButtonValue = -1;
-	};
-	void Init(HINSTANCE hInstance, Application* app, BOOL isBwoop);
+	void Init(HINSTANCE hInstance, Application* app);
 	BOOL Create(Timer* timer, int width, int height);
 	void CreateGraphicsResources();
 	void Paint();
@@ -65,15 +30,13 @@ public:
 	HWND GetwindowHandle() { return hWindow; }
 	Renderer m_Renderer;
 private:
-	RasterizedShape shapesun;
-	RasterizedShape shapemoon;
-	RasterizedShape shapeclockticks;
+	UIstate m_UIstate;
 	ATOM RegisterWindowClass(HINSTANCE hInstance);
 	LRESULT CALLBACK ClassWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 	void SetRepeatTimer(HWND hWnd);
 	void KillRepeatTimer(HWND hWnd);
-	void IncrementTime();
-	void DecrementTime();
+	BOOL IncrementTime(UINT index);
+	BOOL DecrementTime(UINT index);
 	BOOL CheckMouseHand(int mousex, int mousey);
 	void MouseAdjustAlarm(int mousex, int mousey);
 	void AdjustTimeofDay(int amount);
@@ -86,25 +49,22 @@ private:
 	Application* m_App = nullptr;
 	DigitalClock m_DigitalClock;
 	ClockFace m_ClockFace;
-	static const int ButtonCount = 8;
+	static const int ButtonCount = 17;
 	Button m_Buttons[ButtonCount];
-	int HoverElement = -1;
-	int GrabbedElementLMB = -1;
-	int GrabbedElementRMB = -1;
-	BOOL GrabLock = FALSE;
 	BOOL Reseting = FALSE;
 	BOOL Adding = FALSE;
 	float mouseAngle = 0.0f;
 	float minuteHandangle = 0.0f;
-	const float buttonoffset = 200.0f;
+	D2D1::Matrix3x2F m_TransformAddtime[3] = {};
 	D2D1::Matrix3x2F m_TransformMain{D2D1::Matrix3x2F::Scale(0.15f, 0.15f)* D2D1::Matrix3x2F::Translation(24, 200)};
-	D2D1::Matrix3x2F m_TransformAddtime{D2D1::Matrix3x2F::Scale(0.1f, 0.1f)* D2D1::Matrix3x2F::Translation(70, 226 + buttonoffset)};
 	D2D1::Matrix3x2F m_TransformAlarm{D2D1::Matrix3x2F::Scale(0.1f, 0.1f)* D2D1::Matrix3x2F::Translation(260, 150 )};
 	float timeofDayOffset = 0.0f;
 	int timeofdayvalue = 0;
-	INT64 AddTime = 0;
+	INT64 AddTime[3] = {};
 	Timer* m_pTimer = nullptr;
 	BOOL MouseinWindow = FALSE;
-	BOOL b_Bwoop = FALSE;
+	//BOOL b_Bwoop = FALSE;
 	UINT_PTR MouseTimerID {};
+	ComPtr<ID2D1SolidColorBrush> BKGBrush;
+	ComPtr<ID2D1SolidColorBrush> BorderBrush;
 };

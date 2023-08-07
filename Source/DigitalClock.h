@@ -4,8 +4,7 @@
 class DigitalClock
 {
 public:
-	void Init(ID2D1Factory2* pD2DFactory);
-	void CreateGraphicsResources(ID2D1DeviceContext* pRenderTarget);
+	void Init(ID2D1Factory2* pD2DFactory, ID2D1DeviceContext* dc);
 	void Draw(ID2D1DeviceContext* dc, D2D1::Matrix3x2F transform, BOOL Highlighted, BOOL bTenths, INT64 ms);
 private:
 	void DrawInternal(ID2D1DeviceContext* dc, D2D1::Matrix3x2F transform, BOOL Highlighted, BOOL bTenths, INT64 days, INT64 hours, INT64 mins, INT64 tenths);

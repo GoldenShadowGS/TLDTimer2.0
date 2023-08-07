@@ -6,7 +6,7 @@
 #include "Direct2D.h"
 #include "ComException.h"
 
-std::vector<BYTE> FlipImage(std::vector<BYTE>& Image, int pitch, int height)
+std::vector<BYTE> FlipImage8bit(std::vector<BYTE>& Image, int pitch, int height)
 {
 	std::vector<BYTE> FlippedPixels;
 	FlippedPixels.resize(Image.size());
@@ -20,16 +20,30 @@ std::vector<BYTE> FlipImage(std::vector<BYTE>& Image, int pitch, int height)
 	return FlippedPixels;
 }
 
+std::vector<BYTE> FlipImage32bit(std::vector<BYTE>& Image, int pitch, int height)
+{
+	std::vector<BYTE> FlippedPixels;
+	FlippedPixels.resize(Image.size());
+	for (UINT64 row = 0; row < height; row++)
+	{
+		BYTE* SrcRow = Image.data() + (row * pitch);
+		BYTE* DestRow = FlippedPixels.data() + (((height - 1LL) - row) * pitch);
+		memcpy(DestRow, SrcRow, pitch);
+	}
+	return FlippedPixels;
+}
+
 void Bitmap::Create(ID2D1DeviceContext* dc, int resource, COLORREF color, D2D1_POINT_2F pivot, float scale)
 {
 	UINT PixelWidth;
 	UINT PixelHeight;
 	UINT Pitch;
-	std::vector<BYTE> Pixels8Bit = FileLoader(resource, PixelWidth, PixelHeight, Pitch);
-	std::vector<int> Pixels32Bit(Pixels8Bit.size());
-	for (UINT64 i = 0; i < Pixels8Bit.size(); i++)
+	std::vector<BYTE> Pixels = FileLoader(resource, PixelWidth, PixelHeight, Pitch);
+	std::vector<BYTE> FlippedPixels = FlipImage8bit(Pixels, Pitch, PixelHeight);
+	std::vector<int> Pixels32Bit(FlippedPixels.size());
+	for (UINT64 i = 0; i < FlippedPixels.size(); i++)
 	{
-		const float alpha = (255 - Pixels8Bit[i]) / 255.0f;
+		const float alpha = (255 - FlippedPixels[i]) / 255.0f;
 		Pixels32Bit[i] =
 			BYTE(GetRValue(color) * alpha) +
 			(BYTE(GetGValue(color) * alpha) << 8) +
@@ -54,11 +68,11 @@ void Bitmap::Create(ID2D1DeviceContext* dc, int resource, COLORREF color, D2D1_P
 
 	// Create a temporary bitmap 
 	ComPtr<ID2D1Bitmap> bitmapA;
-	HR(dc->CreateBitmap(bitmapsize, Pixels32Bit.data(), Pitch, bitmapprops, &bitmapA));
+	HR(dc->CreateBitmap(bitmapsize, Pixels32Bit.data(), Pitch, bitmapprops, bitmapA.ReleaseAndGetAddressOf()));
 
 	// Create Render Target of the scaled bitmap
 	ComPtr<ID2D1BitmapRenderTarget> BitmapRenderTarget;
-	HR(dc->CreateCompatibleRenderTarget(m_Size, &BitmapRenderTarget));
+	HR(dc->CreateCompatibleRenderTarget(m_Size, BitmapRenderTarget.ReleaseAndGetAddressOf()));
 
 	// Draw Scaled Bitmap
 	BitmapRenderTarget->BeginDraw();
@@ -69,6 +83,31 @@ void Bitmap::Create(ID2D1DeviceContext* dc, int resource, COLORREF color, D2D1_P
 
 	//After Drawing, retrieve the scaled bitmap from the render target and store it in the class member ComPtr
 	HR(BitmapRenderTarget->GetBitmap(m_Bitmap.ReleaseAndGetAddressOf()));
+}
+
+void Bitmap::Create32bit(ID2D1DeviceContext* dc, int resource, D2D1_POINT_2F pivot)
+{
+	UINT PixelWidth;
+	UINT PixelHeight;
+	UINT Pitch;
+	std::vector<BYTE> Pixels32Bit = FileLoader(resource, PixelWidth, PixelHeight, Pitch);
+	std::vector<BYTE> FlippedPixels32Bit = FlipImage32bit(Pixels32Bit, Pitch, PixelHeight);
+	D2D1_SIZE_U bitmapsize = {};
+	bitmapsize.width = PixelWidth;
+	bitmapsize.height = PixelHeight;
+	m_Size = { (float)PixelWidth, (float)PixelHeight };
+
+	// m_Pivot is the Center of the bitmap for positioning and rotation
+	m_Pivot = D2D1::Point2F(pivot.x * m_Size.width, pivot.y * m_Size.height);
+
+	// Resource Bitmap
+	D2D1_BITMAP_PROPERTIES bitmapprops = {};
+	bitmapprops.pixelFormat.format = DXGI_FORMAT_B8G8R8A8_UNORM;
+	bitmapprops.pixelFormat.alphaMode = D2D1_ALPHA_MODE_PREMULTIPLIED;
+	bitmapprops.dpiX = 96.0f;
+	bitmapprops.dpiY = 96.0f;
+
+	HR(dc->CreateBitmap(bitmapsize, FlippedPixels32Bit.data(), Pitch, bitmapprops, m_Bitmap.ReleaseAndGetAddressOf()));
 }
 
 void Bitmap::Draw(ID2D1DeviceContext* dc, D2D1_POINT_2F center)
@@ -145,5 +184,5 @@ std::vector<BYTE> Bitmap::FileLoader(_In_ int resource, _Out_ UINT& width, _Out_
 	resLoader.Seek(bmpHeader.pixeldataoffset);
 	resLoader.Read(Pixels8Bit.data(), buffersize);
 
-	return FlipImage(Pixels8Bit, pitch, height);
+	return Pixels8Bit;
 }

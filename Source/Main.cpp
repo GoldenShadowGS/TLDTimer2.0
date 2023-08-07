@@ -24,11 +24,5 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 	{
 		return 0;
 	}
-	//catch (std::exception& e)
-	//{
-	//	// Catch Errors and Exit
-	//	UNREFERENCED_PARAMETER(e);
-	//	return 0;
-	//}
 }
 
