@@ -655,16 +655,19 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 			if (m_UIstate.GrabbedElementRMB == BUTTON_ADDTIME1)
 			{
 				m_pTimer->AddTime(-AddTime[0]);
+				m_ClockText.Set(m_pTimer->GetMilliseconds());
 				m_App->m_SoundManager.Play(m_App->TimerClick, 1.0f, 1.0f);
 			}
 			else if (m_UIstate.GrabbedElementRMB == BUTTON_ADDTIME2)
 			{
 				m_pTimer->AddTime(-AddTime[1]);
+				m_ClockText.Set(m_pTimer->GetMilliseconds());
 				m_App->m_SoundManager.Play(m_App->TimerClick, 1.0f, 1.0f);
 			}
 			else if (m_UIstate.GrabbedElementRMB == BUTTON_ADDTIME3)
 			{
 				m_pTimer->AddTime(-AddTime[2]);
+				m_ClockText.Set(m_pTimer->GetMilliseconds());
 				m_App->m_SoundManager.Play(m_App->TimerClick, 1.0f, 1.0f);
 			}
 		}
