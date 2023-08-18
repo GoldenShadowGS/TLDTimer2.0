@@ -23,7 +23,7 @@ private:
 	RasterizedShape SunShape;
 	RasterizedShape MoonShape;
 	RasterizedShape ClockTicksShape;
-	D2D1_POINT_2F m_Center = { 320.0f, 120.0f };
+	D2D1_POINT_2F m_Center = { 220.0f, 120.0f };
 	float m_Radius = 110.0f;
 	Bitmap minutehandbitmap;
 	Bitmap hourhandbitmap;

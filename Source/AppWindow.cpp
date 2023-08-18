@@ -15,6 +15,8 @@ void AppWindow::Init(HINSTANCE hInstance, Application* app)
 
 BOOL AppWindow::Create(Timer* timer, int width, int height)
 {
+	WindowWidth = (float)width;
+	WindowHeight = (float)height;
 	m_pTimer = timer;
 	Loadfile();
 	const DWORD style = WS_OVERLAPPEDWINDOW ^ WS_THICKFRAME ^ WS_MAXIMIZEBOX;
@@ -39,6 +41,7 @@ BOOL AppWindow::Create(Timer* timer, int width, int height)
 	if (!hWindow)
 		return FALSE;
 
+
 	ShowWindow(hWindow, SW_SHOW);
 	UpdateWindow(hWindow);
 
@@ -56,6 +59,10 @@ void AppWindow::CreateGraphicsResources()
 	m_DigitalClock.Init(factory, dc);
 	m_ClockFace.Init(factory, dc);
 
+	m_ClockText.Init(factory, dc, 20, -8.0f);
+
+	TomaTroll = Load32BitBitmap(dc, BITMAP_TOMATROLL);
+
 	const int lrgSize = 60;
 	const int medSize = 30;
 	const int smSize = 22;
@@ -72,14 +79,14 @@ void AppWindow::CreateGraphicsResources()
 	int TimeX = -16;
 	int TimeY = 50;
 
-	m_Buttons[0].Create(factory, dc, BUTTON_START, 136, 290, 145, 74);
-	m_Buttons[1].Create(factory, dc, BUTTON_RESET, 22, 290, smSize, smSize);
-	m_Buttons[2].Create(factory, dc, BUTTON_TIMEOFDAYINC, 300, 290, medSize, medSize);
-	m_Buttons[3].Create(factory, dc, BUTTON_TIMEOFDAYDEC, 340, 290, medSize, medSize);
+	m_Buttons[0].Create(factory, dc, BUTTON_START, 136, 390, 145, 74);
+	m_Buttons[1].Create(factory, dc, BUTTON_RESET, 22, 390, smSize, smSize);
+	m_Buttons[2].Create(factory, dc, BUTTON_TIMEOFDAYINC, 300, 390, medSize, medSize);
+	m_Buttons[3].Create(factory, dc, BUTTON_TIMEOFDAYDEC, 340, 390, medSize, medSize);
 	int XINCREMENT = 144;
 	// Offsets
 	int OffsetX = 60;
-	int OffsetY = 370;
+	int OffsetY = 470;
 	for (int i = 0; i < 3; i++)
 	{
 		m_Buttons[4 + i * 4].Create(factory, dc, BUTTON_ADDTIME1 + i * 4, AddX + OffsetX, AddY + OffsetY, lrgSize, lrgSize);
@@ -89,7 +96,8 @@ void AppWindow::CreateGraphicsResources()
 		m_TransformAddtime[i] = D2D1::Matrix3x2F::Scale(0.1175f, 0.1175f) * D2D1::Matrix3x2F::Translation((float)TimeX + OffsetX, (float)TimeY + OffsetY);
 		OffsetX += XINCREMENT;
 	}
-	m_Buttons[16].Create(factory, dc, BUTTON_BWOOP, 400, 290, 64, 64);
+	m_Buttons[16].Create(factory, dc, BUTTON_BWOOP, 400, 390, 64, 64);
+	m_ClockText.Set(m_pTimer->GetMilliseconds());
 	AdjustTimeofDay(0);
 }
 
@@ -107,9 +115,19 @@ void AppWindow::Paint()
 	dc->BeginDraw();
 	dc->Clear();
 
-	D2D_RECT_F UI_Rect = { 0.0f, 240.0f, 440.0f, 440.0f };
-	D2D1_POINT_2F p1 = { 0.0f, 240.0f };
-	D2D1_POINT_2F p2 = { 440.0f, 240.0f };
+	INT64 maintime = m_pTimer->GetMilliseconds();
+	int trolltime = maintime % 60000;
+	if (trolltime >= 0 && trolltime < 250 && maintime >= 60000 && m_UIstate.b_BWOOP)
+	{
+		FastRender = TRUE;
+		TomaTroll.DrawScaled(dc, { 200, 220.0f }, 0.75f);
+	}
+	else
+		FastRender = FALSE;
+
+	D2D_RECT_F UI_Rect = { 0.0f, 340.0f, 440.0f, 540.0f };
+	D2D1_POINT_2F p1 = { 0.0f, 340.0f };
+	D2D1_POINT_2F p2 = { 440.0f, 340.0f };
 	dc->SetTransform(D2D1::Matrix3x2F::Identity());
 	dc->FillRectangle(UI_Rect, BKGBrush.Get());
 	dc->DrawLine(p1, p2, BorderBrush.Get(), 1.0f);
@@ -118,7 +136,6 @@ void AppWindow::Paint()
 		m_Buttons[i].Draw(dc, m_pTimer->isStarted(), m_UIstate);
 	}
 
-	INT64 maintime = m_pTimer->GetMilliseconds();
 
 	INT64 alarmTime = m_pTimer->GetAlarmTime();
 
@@ -144,7 +161,7 @@ void AppWindow::Paint()
 
 	m_ClockFace.Draw(dc, clockAngle);
 
-	m_DigitalClock.Draw(dc, m_TransformMain, (maintime && (m_UIstate.HoverElement == BUTTON_RESET)), TRUE, maintime);
+	//m_DigitalClock.Draw(dc, m_TransformMain, (maintime && (m_UIstate.HoverElement == BUTTON_RESET)), TRUE, maintime);
 
 	BOOL highlighted = (m_UIstate.HoverElement == BUTTON_INCTIME1 || m_UIstate.HoverElement == BUTTON_DECTIME1) ||
 		(AddTime[0] && m_UIstate.HoverElement >= BUTTON_ADDTIME1 && m_UIstate.HoverElement <= BUTTON_ZERO1);
@@ -164,13 +181,22 @@ void AppWindow::Paint()
 	if (alarmTime)
 		m_DigitalClock.Draw(dc, m_TransformAlarm, (m_UIstate.GrabLock), TRUE, alarmTime);
 
+	//m_ClockText.Set(maintime);
+	float stringwidth = m_ClockText.GetStringWidth();
+	D2D1::Matrix3x2F transform = D2D1::Matrix3x2F::Translation(WindowWidth * 0.5f - stringwidth * 0.5f, 240);
+	m_ClockText.Draw(dc, transform);
+
+
 	HR(dc->EndDraw());
 	HR(m_Renderer.GetSwapChain()->Present(1, 0));
 	Reseting = FALSE;
 	Adding = FALSE;
-	PAINTSTRUCT ps;
-	BeginPaint(hWindow, &ps);
-	EndPaint(hWindow, &ps);
+	if (!FastRender)
+	{
+		PAINTSTRUCT ps;
+		BeginPaint(hWindow, &ps);
+		EndPaint(hWindow, &ps);
+	}
 }
 
 ATOM AppWindow::RegisterWindowClass(HINSTANCE hInstance)
@@ -364,6 +390,26 @@ void AppWindow::Loadfile()
 	}
 }
 
+void AppWindow::KeyPressed(ClockText& timeString, char key)
+{
+	if (key >= '0' && key <= '9')
+	{
+		if (timeString.Add(key))
+		{
+			Adding = TRUE;
+			m_App->m_SoundManager.Play(m_App->TimerClick, 1.0f, 1.0f);
+		}
+	}
+	else if (key == 8) // 8 BackSpace
+	{
+		if (timeString.Back())
+		{
+			Adding = TRUE;
+			m_App->m_SoundManager.Play(m_App->TimerClick, 1.0f, 1.0f);
+		}
+	}
+}
+
 LRESULT CALLBACK AppWindow::WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	static AppWindow* window = nullptr;
@@ -449,7 +495,6 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 		MouseDelay = 0;
 		SetRepeatTimer(hWnd);
 
-
 		mouseAngle = getMouseAngle(GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), m_ClockFace.GetCenterX(), m_ClockFace.GetCenterY(), -HalfPI);
 		float mouseHandAngle = GetAngleDistance(mouseAngle, minuteHandangle);
 
@@ -514,6 +559,7 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 				break;
 			case BUTTON_ADDTIME1:
 				m_pTimer->AddTime(AddTime[0]);
+				m_ClockText.Set(m_pTimer->GetMilliseconds());
 				Adding = TRUE;
 				m_App->m_SoundManager.Play(m_App->TimerClick, 1.0f, 1.0f);
 				break;
@@ -536,6 +582,7 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 				break;
 			case BUTTON_ADDTIME2:
 				m_pTimer->AddTime(AddTime[1]);
+				m_ClockText.Set(m_pTimer->GetMilliseconds());
 				Adding = TRUE;
 				m_App->m_SoundManager.Play(m_App->TimerClick, 1.0f, 1.0f);
 				break;
@@ -558,6 +605,7 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 				break;
 			case BUTTON_ADDTIME3:
 				m_pTimer->AddTime(AddTime[2]);
+				m_ClockText.Set(m_pTimer->GetMilliseconds());
 				Adding = TRUE;
 				m_App->m_SoundManager.Play(m_App->TimerClick, 1.0f, 1.0f);
 				break;
@@ -633,6 +681,23 @@ LRESULT CALLBACK AppWindow::ClassWndProc(HWND hWnd, UINT message, WPARAM wParam,
 			GetClientRect(hWnd, &rc);
 			InvalidateRect(hWnd, &rc, TRUE);
 		}
+	}
+	break;
+	case WM_CHAR:
+	{
+		Adding = TRUE;
+		if (!m_pTimer->isStarted())
+		{
+			KeyPressed(m_ClockText, (char)wParam);
+			m_pTimer->SetTime(m_ClockText.GetTime());
+		}
+		Paint();
+	}
+	break;
+	case WM_APP + 1:
+	{
+		m_ClockText.Set(m_pTimer->GetMilliseconds());
+		Paint();
 	}
 	break;
 	case WM_TIMER:

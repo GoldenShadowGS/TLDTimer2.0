@@ -64,6 +64,7 @@ public:
 	BOOL isStarted() { return m_bStarted; }
 	INT64 GetMilliseconds();
 	void SetAppWindow(HWND hwnd) { AppWindow = hwnd; }
+	void SetTime(INT64 time);
 	void AddTime(INT64 time);
 	void AdjustAlarm(INT64 ms);
 	INT64 GetAlarmTime();

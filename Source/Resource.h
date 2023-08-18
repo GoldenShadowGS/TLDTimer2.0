@@ -46,6 +46,7 @@
 #define BITMAP_HOURHAND                 502
 #define BITMAP_BWOOPON                  503
 #define BITMAP_BWOOPOFF                 504
+#define BITMAP_TOMATROLL                505
 
 #define SHAPE_PLAY                      601
 #define SHAPE_PAUSE                     602

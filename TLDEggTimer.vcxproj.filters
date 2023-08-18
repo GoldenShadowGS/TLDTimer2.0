@@ -16,6 +16,12 @@
     <Filter Include="PCH">
       <UniqueIdentifier>{3df0f969-1177-4838-8033-54b0924c5121}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\ClockText">
+      <UniqueIdentifier>{52b96822-0398-4c75-88a9-89f9b412b5f0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ClockText">
+      <UniqueIdentifier>{029f0a5f-7b37-4c70-aa88-364aa2fcd98a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Main.cpp">
@@ -56,6 +62,15 @@
     </ClCompile>
     <ClCompile Include="Source\Button.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\ClockText.cpp">
+      <Filter>Source Files\ClockText</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\TimeString.cpp">
+      <Filter>Source Files\ClockText</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\SevenSegmentText.cpp">
+      <Filter>Source Files\ClockText</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -103,6 +118,15 @@
     </ClInclude>
     <ClInclude Include="Source\Button.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\TimeString.h">
+      <Filter>Header Files\ClockText</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\SevenSegmentText.h">
+      <Filter>Header Files\ClockText</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\ClockText.h">
+      <Filter>Header Files\ClockText</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

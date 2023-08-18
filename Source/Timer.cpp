@@ -57,6 +57,11 @@ INT64 Timer::GetMilliseconds()
 		return m_SavedDuration.GetSavedDuration() / 5;
 }
 
+void Timer::SetTime(INT64 time)
+{
+	m_SavedDuration.SetDuration(time * 5);
+}
+
 void Timer::AddTime(INT64 time)
 {
 	BOOL IsAlarmSet = (GetAlarmTime() != 0);
@@ -106,11 +111,15 @@ void Timer::MouseRelease()
 
 void Timer::ReDraw()
 {
+	//if (AppWindow)
+	//{
+	//	RECT rc;
+	//	GetClientRect(AppWindow, &rc);
+	//	InvalidateRect(AppWindow, &rc, TRUE);
+	//}
 	if (AppWindow)
 	{
-		RECT rc;
-		GetClientRect(AppWindow, &rc);
-		InvalidateRect(AppWindow, &rc, TRUE);
+		PostMessageA(AppWindow, WM_APP + 1, 0, 0);
 	}
 }
 

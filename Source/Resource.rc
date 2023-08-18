@@ -23,3 +23,5 @@ BITMAP_HOURHANDSHADOW     BITMAPDATA                 "resources/HourHandShadow.b
 
 BITMAP_BWOOPON            BITMAPDATA                 "resources/bwoopON.bmp"
 BITMAP_BWOOPOFF           BITMAPDATA                 "resources/bwoopOFF.bmp"
+
+BITMAP_TOMATROLL          BITMAPDATA                 "resources/tomatroll.bmp"
