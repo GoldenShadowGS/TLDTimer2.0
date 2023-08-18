@@ -117,13 +117,8 @@ void AppWindow::Paint()
 
 	INT64 maintime = m_pTimer->GetMilliseconds();
 	int trolltime = maintime % 60000;
-	if (trolltime >= 0 && trolltime < 250 && maintime >= 60000 && m_UIstate.b_BWOOP)
-	{
-		FastRender = TRUE;
+	if (trolltime >= 0 && trolltime < 250 && maintime >= 60000 && m_UIstate.b_BWOOP && m_pTimer->isStarted())
 		TomaTroll.DrawScaled(dc, { 200, 220.0f }, 0.75f);
-	}
-	else
-		FastRender = FALSE;
 
 	D2D_RECT_F UI_Rect = { 0.0f, 340.0f, 440.0f, 540.0f };
 	D2D1_POINT_2F p1 = { 0.0f, 340.0f };
@@ -191,12 +186,10 @@ void AppWindow::Paint()
 	HR(m_Renderer.GetSwapChain()->Present(1, 0));
 	Reseting = FALSE;
 	Adding = FALSE;
-	if (!FastRender)
-	{
-		PAINTSTRUCT ps;
-		BeginPaint(hWindow, &ps);
-		EndPaint(hWindow, &ps);
-	}
+
+	PAINTSTRUCT ps;
+	BeginPaint(hWindow, &ps);
+	EndPaint(hWindow, &ps);
 }
 
 ATOM AppWindow::RegisterWindowClass(HINSTANCE hInstance)

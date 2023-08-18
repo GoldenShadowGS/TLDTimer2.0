@@ -73,5 +73,4 @@ private:
 	ComPtr<ID2D1SolidColorBrush> BKGBrush;
 	ComPtr<ID2D1SolidColorBrush> BorderBrush;
 	RasterizedShape TomaTroll;
-	BOOL FastRender = FALSE;
 };
